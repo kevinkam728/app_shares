@@ -10,7 +10,7 @@ export async function signUpAction(formData: FormData) {
   const role = formData.get('role') as 'user' | 'advisor'
   const file = formData.get('cnvPdf') as File | null
 
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // 1. Auth SignUp
   const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -62,7 +62,7 @@ export async function signUpAction(formData: FormData) {
 export async function signInAction(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
