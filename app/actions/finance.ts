@@ -2,9 +2,12 @@
 
 import yahooFinance from 'yahoo-finance2';
 
+// Yahoo Finance v2 requiere inicialización
+const yf = yahooFinance;
+
 export async function getStockData(ticker: string) {
   try {
-    const quote = await yahooFinance.quote(ticker);
+    const quote = await yf.quote(ticker);
     return quote;
   } catch (error) {
     console.error("Error fetching stock:", error);
@@ -15,7 +18,7 @@ export async function getStockData(ticker: string) {
 export async function getHistoricalData(ticker: string) {
   try {
     const queryOptions = { period1: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }; // 30 días
-    const result = await yahooFinance.historical(ticker, queryOptions);
+    const result = await yf.historical(ticker, queryOptions);
     return result;
   } catch (error) {
     console.error("Error fetching historical data:", error);
