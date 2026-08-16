@@ -8,6 +8,7 @@ import { Search, UserCheck } from 'lucide-react'
 
 export default function DashboardPage() {
   const [userProfile, setUserProfile] = useState<any>(null)
+  const [userName, setUserName] = useState("Usuario")
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -21,9 +22,31 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchProfile = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      if (!user) {
+        setPageLoading(false)
+        return
+      }
+
+      let { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      
+      if (error || !data) {
+        // Intentar crear perfil si no existe
+        const { data: newProfile, error: upsertError } = await supabase.from('profiles').upsert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+          role: 'user'
+        }, { onConflict: 'id' }).select().single()
+        
+        if (!upsertError) {
+          data = newProfile
+        }
+      }
+      
+      if (data) {
         setUserProfile(data)
+        const name = data.full_name || user.email?.split('@')[0] || 'Usuario'
+        setUserName(name.charAt(0).toUpperCase() + name.slice(1))
       }
       setPageLoading(false)
     }
@@ -65,7 +88,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <header className="flex justify-between items-center mb-8 bg-gray-800 p-6 rounded-xl shadow-lg">
-        <h1 className="text-2xl font-bold">Bienvenido, {userProfile?.full_name}</h1>
+        <h1 className="text-2xl font-bold">Bienvenido, {userName}</h1>
         {userProfile?.role === 'advisor' && (
           <div className="flex items-center gap-2 bg-green-900/30 text-green-400 px-4 py-2 rounded-full text-sm font-semibold border border-green-700">
             <UserCheck size={16} />
