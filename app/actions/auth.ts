@@ -45,13 +45,13 @@ export async function signUpAction(formData: FormData) {
   }
 
   // 3. Create Profile
-  const { error: profileError } = await supabase.from('profiles').insert({
+  const { error: profileError } = await supabase.from('profiles').upsert({
     id: authData.user.id,
     email,
     full_name: fullName,
     role: role === 'advisor' ? 'pending_advisor' : 'user',
     cnv_pdf_url,
-  })
+  }, { onConflict: 'id' })
 
   if (profileError) return { error: 'Error creating profile' }
 

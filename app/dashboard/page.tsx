@@ -27,17 +27,17 @@ export default function DashboardPage() {
       
       if (error || !data) {
         // Intentar crear perfil si no existe
-        const { data: newProfile, error: insertError } = await supabase.from('profiles').insert({
+        const { data: newProfile, error: upsertError } = await supabase.from('profiles').upsert({
           id: user.id,
           email: user.email,
           full_name: 'Usuario Nuevo',
           role: 'user'
-        }).select().single()
+        }, { onConflict: 'id' }).select().single()
         
-        if (!insertError) {
+        if (!upsertError) {
           data = newProfile
         } else {
-          console.error("Error creating profile:", insertError)
+          console.error("Error creating profile:", upsertError)
         }
       }
       
