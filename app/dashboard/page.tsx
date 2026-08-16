@@ -29,6 +29,8 @@ export default function DashboardPage() {
 
       let { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       
+      console.log("Fetched profile:", data, "Error:", error)
+      
       if (error || !data) {
         // Intentar crear perfil si no existe
         const { data: newProfile, error: upsertError } = await supabase.from('profiles').upsert({
@@ -38,6 +40,8 @@ export default function DashboardPage() {
           role: 'user'
         }, { onConflict: 'id' }).select().single()
         
+        console.log("Upserted profile:", newProfile, "Error:", upsertError)
+        
         if (!upsertError) {
           data = newProfile
         }
@@ -46,6 +50,7 @@ export default function DashboardPage() {
       if (data) {
         setUserProfile(data)
         const name = data.full_name || user.email?.split('@')[0] || 'Usuario'
+        console.log("Setting userName to:", name)
         setUserName(name.charAt(0).toUpperCase() + name.slice(1))
       }
       setPageLoading(false)
