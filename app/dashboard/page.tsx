@@ -5,6 +5,7 @@ import { getStockData, getHistoricalData, searchStocks } from '../actions/financ
 import { createClient } from '@/lib/supabase/client'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Search, UserCheck } from 'lucide-react'
+import StockHeatmap from '@/components/StockHeatmap'
 
 export default function DashboardPage() {
   const [userProfile, setUserProfile] = useState<any>(null)
@@ -29,8 +30,6 @@ export default function DashboardPage() {
 
       let { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       
-      console.log("Fetched profile:", data, "Error:", error)
-      
       if (error || !data) {
         // Intentar crear perfil si no existe
         const { data: newProfile, error: upsertError } = await supabase.from('profiles').upsert({
@@ -40,8 +39,6 @@ export default function DashboardPage() {
           role: 'user'
         }, { onConflict: 'id' }).select().single()
         
-        console.log("Upserted profile:", newProfile, "Error:", upsertError)
-        
         if (!upsertError) {
           data = newProfile
         }
@@ -49,9 +46,9 @@ export default function DashboardPage() {
       
       if (data) {
         setUserProfile(data)
-        const name = data.full_name || user.email?.split('@')[0] || 'Usuario'
-        console.log("Setting userName to:", name)
-        setUserName(name.charAt(0).toUpperCase() + name.slice(1))
+        // Priorizar full_name de profiles, luego metadatos, luego email
+        const nameToUse = data.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario'
+        setUserName(nameToUse.charAt(0).toUpperCase() + nameToUse.slice(1))
       }
       setPageLoading(false)
     }
@@ -101,6 +98,8 @@ export default function DashboardPage() {
           </div>
         )}
       </header>
+
+      <StockHeatmap />
 
       <div className="relative mb-8" ref={dropdownRef}>
         <div className="flex gap-2">
