@@ -4,6 +4,7 @@ import YahooFinance from 'yahoo-finance2';
 const yahooFinance = new YahooFinance();
 
 export async function getStockData(ticker: string) {
+  if (!ticker) return null;
   try {
     const quote = await yahooFinance.quote(ticker);
     return quote;
@@ -14,10 +15,11 @@ export async function getStockData(ticker: string) {
 }
 
 export async function getHistoricalData(ticker: string) {
+  if (!ticker) return null;
   try {
     const queryOptions = { period1: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }; // 30 días
-    const result = await yahooFinance.historical(ticker, queryOptions);
-    return result;
+    const result = await yahooFinance.chart(ticker, queryOptions);
+    return result.quotes;
   } catch (error) {
     console.error("Error fetching historical data:", error);
     return null;
