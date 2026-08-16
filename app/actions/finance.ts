@@ -23,3 +23,16 @@ export async function getHistoricalData(ticker: string) {
     return null;
   }
 }
+
+export async function searchStocks(query: string) {
+  try {
+    const result = await yahooFinance.search(query);
+    return result.quotes.slice(0, 6).map((q: any) => ({
+      symbol: q.symbol,
+      name: q.shortname || q.longname
+    }));
+  } catch (error) {
+    console.error("Error searching stocks:", error);
+    return [];
+  }
+}
