@@ -88,7 +88,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <header className="flex justify-between items-center mb-8 bg-gray-800 p-6 rounded-xl shadow-lg">
-        <h1 className="text-2xl font-bold">Bienvenido, {userName}</h1>
+        <h1 className="text-2xl font-bold">Bienvenido, {userName ? userName : 'Inversor'}</h1>
         {userProfile?.role === 'advisor' && (
           <div className="flex items-center gap-2 bg-green-900/30 text-green-400 px-4 py-2 rounded-full text-sm font-semibold border border-green-700">
             <UserCheck size={16} />
