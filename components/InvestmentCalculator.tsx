@@ -47,21 +47,44 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
         </select>
 
         {mode === 'compound' ? (
-          <div className="space-y-3">
-            <input type="number" placeholder="Capital Inicial" className="w-full p-2 bg-gray-700 rounded" onChange={e => setCompound({...compound, initial: +e.target.value})} />
-            <input type="number" placeholder="Aporte Mensual" className="w-full p-2 bg-gray-700 rounded" onChange={e => setCompound({...compound, monthly: +e.target.value})} />
-            <div className="text-lg mt-4 text-center">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Capital Inicial ($)</label>
+              <input type="number" placeholder="1000" className="w-full p-2 bg-gray-700 rounded" onChange={e => setCompound({...compound, initial: +e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Aporte Mensual ($)</label>
+              <input type="number" placeholder="100" className="w-full p-2 bg-gray-700 rounded" onChange={e => setCompound({...compound, monthly: +e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Tasa de Interés Anual (%)</label>
+              <input type="number" placeholder="8" className="w-full p-2 bg-gray-700 rounded" onChange={e => setCompound({...compound, rate: +e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Años de Inversión</label>
+              <input type="number" placeholder="10" className="w-full p-2 bg-gray-700 rounded" onChange={e => setCompound({...compound, years: +e.target.value})} />
+            </div>
+            <div className="text-lg mt-6 text-center bg-gray-900 p-4 rounded-lg">
               Monto Final: <span className="font-bold text-green-400">${compoundResult.final.toFixed(2)}</span><br/>
-              Ganancia: <span className="font-bold text-blue-400">${compoundResult.gain.toFixed(2)}</span>
+              Ganancia Total: <span className="font-bold text-blue-400">${compoundResult.gain.toFixed(2)}</span>
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
-            <input type="number" placeholder="Precio Compra" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, buy: +e.target.value})} />
-            <input type="number" placeholder="Precio Venta" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, sell: +e.target.value})} />
-            <input type="number" placeholder="Cantidad" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, quantity: +e.target.value})} />
-            <div className="text-lg mt-4 text-center">
-              PNL: <span className={`font-bold ${tradeResult.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>${tradeResult.pnl.toFixed(2)}</span><br/>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Precio de Compra ($)</label>
+              <input type="number" placeholder="100" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, buy: +e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Precio de Venta / Actual ($)</label>
+              <input type="number" placeholder="120" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, sell: +e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Cantidad de Acciones</label>
+              <input type="number" placeholder="10" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, quantity: +e.target.value})} />
+            </div>
+            <div className="text-lg mt-6 text-center bg-gray-900 p-4 rounded-lg">
+              Ganancia/Pérdida Neta: <span className={`font-bold ${tradeResult.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>${tradeResult.pnl.toFixed(2)}</span><br/>
               Retorno: <span className={`font-bold ${tradeResult.pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>{tradeResult.pct.toFixed(2)}%</span>
             </div>
           </div>
