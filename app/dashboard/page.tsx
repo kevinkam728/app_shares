@@ -99,8 +99,6 @@ export default function DashboardPage() {
         )}
       </header>
 
-      <StockHeatmap />
-
       <div className="relative mb-8" ref={dropdownRef}>
         <div className="flex gap-2">
           <input 
@@ -131,6 +129,10 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mt-8">
+        <StockHeatmap />
       </div>
 
       {stock && (
