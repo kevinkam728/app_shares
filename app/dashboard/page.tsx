@@ -4,12 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import { getStockData, getHistoricalData, searchStocks } from '../actions/finance'
 import { createClient } from '@/lib/supabase/client'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { Search, UserCheck } from 'lucide-react'
+import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell } from 'lucide-react'
 import StockHeatmap from '@/components/StockHeatmap'
 
 export default function DashboardPage() {
   const [userProfile, setUserProfile] = useState<any>(null)
   const [userName, setUserName] = useState("Usuario")
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -19,6 +20,18 @@ export default function DashboardPage() {
   const [pageLoading, setPageLoading] = useState(true)
   const supabase = createClient()
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Cerrar menús al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -89,14 +102,42 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
-      <header className="flex justify-between items-center mb-8 bg-gray-800 p-6 rounded-xl shadow-lg">
+      <header className="flex justify-between items-center mb-8 bg-gray-800 p-6 rounded-xl shadow-lg relative">
         <h1 className="text-2xl font-bold">Bienvenido, {userName ? userName : 'Inversor'}</h1>
-        {userProfile?.role === 'advisor' && (
-          <div className="flex items-center gap-2 bg-green-900/30 text-green-400 px-4 py-2 rounded-full text-sm font-semibold border border-green-700">
-            <UserCheck size={16} />
-            Asesor Certificado CNV
+        
+        <div className="flex items-center gap-4">
+          {userProfile?.role === 'advisor' && (
+            <div className="flex items-center gap-2 bg-green-900/30 text-green-400 px-4 py-2 rounded-full text-sm font-semibold border border-green-700">
+              <UserCheck size={16} />
+              Asesor Certificado CNV
+            </div>
+          )}
+
+          <div className="relative" ref={menuRef}>
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              <Settings size={18} /> Herramientas
+            </button>
+
+            {isMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 py-1">
+                {[
+                  { icon: MessageSquare, label: 'Chatbot Financiero' },
+                  { icon: Newspaper, label: 'Noticias del Mercado' },
+                  { icon: Calendar, label: 'Calendario Económico' },
+                  { icon: Calculator, label: 'Calculadora de Inversiones' },
+                  { icon: Bell, label: 'Mis Alertas de Precios' },
+                ].map((item, i) => (
+                  <button key={i} className="flex w-full items-center gap-3 px-4 py-3 text-sm hover:bg-gray-700 transition-colors">
+                    <item.icon size={18} /> {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </header>
 
       <div className="relative mb-8" ref={dropdownRef}>
