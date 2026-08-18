@@ -7,13 +7,14 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
   
   // States
   const [compound, setCompound] = useState({ initial: 1000, monthly: 100, rate: 8, years: 10 })
-  const [trade, setTrade] = useState({ buy: 100, sell: 120, quantity: 10 })
+  const [trade, setTrade] = useState({ buy: 100, sell: 120, quantity: 10, years: 0 })
 
   if (!isOpen) return null
 
   // Calculations
   const calcCompound = () => {
     const { initial, monthly, rate, years } = compound
+    // ... (mantener lógica existente)
     const r = rate / 100 / 12
     const n = years * 12
     let futureValue = initial * Math.pow(1 + r, n)
@@ -25,11 +26,18 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
   }
 
   const calcTrade = () => {
-    const totalCost = trade.buy * trade.quantity
-    const totalValue = trade.sell * trade.quantity
+    const { buy, sell, quantity, years } = trade
+    const totalCost = buy * quantity
+    const totalValue = sell * quantity
     const pnl = totalValue - totalCost
     const pct = (pnl / totalCost) * 100
-    return { pnl, pct }
+    
+    let annualized = 0
+    if (years > 0 && buy > 0) {
+      annualized = (Math.pow(sell / buy, 1 / years) - 1) * 100
+    }
+    
+    return { pnl, pct, annualized }
   }
 
   const compoundResult = calcCompound()
@@ -83,9 +91,18 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
               <label className="block text-sm text-gray-400 mb-1">Cantidad de Acciones</label>
               <input type="number" placeholder="10" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, quantity: +e.target.value})} />
             </div>
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Tiempo de tenencia (Años) - Opcional</label>
+              <input type="number" placeholder="1" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, years: +e.target.value})} />
+            </div>
             <div className="text-lg mt-6 text-center bg-gray-900 p-4 rounded-lg">
               Ganancia/Pérdida Neta: <span className={`font-bold ${tradeResult.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>${tradeResult.pnl.toFixed(2)}</span><br/>
-              Retorno: <span className={`font-bold ${tradeResult.pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>{tradeResult.pct.toFixed(2)}%</span>
+              Retorno Total: <span className={`font-bold ${tradeResult.pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>{tradeResult.pct.toFixed(2)}%</span>
+              {trade.years > 0 && (
+                <>
+                  <br/>Retorno Anualizado: <span className={`font-bold ${tradeResult.annualized >= 0 ? 'text-green-400' : 'text-red-400'}`}>{tradeResult.annualized.toFixed(2)}%</span>
+                </>
+              )}
             </div>
           </div>
         )}
