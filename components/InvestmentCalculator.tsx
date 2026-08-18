@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: { isOpen: boolean; onClose: () => void; defaultMode: string }) {
+  const router = useRouter()
   const [mode, setMode] = useState<'compound' | 'trade' | 'dca'>('compound')
   
   useEffect(() => {
@@ -12,7 +14,10 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
   
   const [compound, setCompound] = useState({ initial: 1000, monthly: 100, rate: 8, years: 10 })
   const [trade, setTrade] = useState({ buy: 100, sell: 120, quantity: 10, years: 0 })
-  const [purchases, setPurchases] = useState([{ price: 0, quantity: 0 }])
+  const [purchases, setPurchases] = useState<{price: number, quantity: number}[]>([])
+  const [currentPrice, setCurrentPrice] = useState('')
+  const [currentQty, setCurrentQty] = useState('')
+  const [ticker, setTicker] = useState('')
 
   if (!isOpen) return null
 
@@ -47,12 +52,29 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
     const totalCost = purchases.reduce((acc, p) => acc + (p.price * p.quantity), 0)
     const totalQuantity = purchases.reduce((acc, p) => acc + p.quantity, 0)
     const avgPrice = totalQuantity > 0 ? totalCost / totalQuantity : 0
-    return { avgPrice, totalQuantity }
+    return { avgPrice, totalQuantity, isValid: purchases.length > 0 }
+  }
+
+  const handleAddPurchase = () => {
+    const price = Number(currentPrice)
+    const qty = Number(currentQty)
+    if (price > 0 && qty > 0) {
+      setPurchases([...purchases, { price, quantity: qty }])
+      setCurrentPrice('')
+      setCurrentQty('')
+    }
   }
 
   const compoundResult = calcCompound()
   const tradeResult = calcTrade()
   const dcaResult = calcDCA()
+
+  const handleVerHistorial = () => {
+    if (ticker && dcaResult.isValid) {
+      localStorage.setItem(`dca_history_${ticker}`, JSON.stringify(purchases))
+      router.push(`/dashboard/history/${ticker}`)
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
@@ -119,22 +141,20 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
           </div>
         ) : (
           <div className="space-y-4">
-            {purchases.map((p, i) => (
-              <div key={i} className="flex gap-2">
-                <input type="number" placeholder="Precio $" className="flex-1 p-2 bg-gray-700 rounded" onChange={e => {
-                  const newP = [...purchases]; newP[i].price = +e.target.value; setPurchases(newP);
-                }} />
-                <input type="number" placeholder="Cant." className="flex-1 p-2 bg-gray-700 rounded" onChange={e => {
-                  const newP = [...purchases]; newP[i].quantity = +e.target.value; setPurchases(newP);
-                }} />
-                {i > 0 && <button onClick={() => setPurchases(purchases.filter((_, idx) => idx !== i))} className="text-red-500">X</button>}
-              </div>
-            ))}
-            <button onClick={() => setPurchases([...purchases, { price: 0, quantity: 0 }])} className="w-full p-2 bg-blue-600 rounded"> + Añadir compra</button>
+            <input type="text" placeholder="Ticker (ej: AAPL)" className="w-full p-2 bg-gray-700 rounded" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase())} />
+            <div className="flex gap-2">
+              <input type="number" placeholder="Precio $" className="flex-1 p-2 bg-gray-700 rounded" value={currentPrice} onChange={e => setCurrentPrice(e.target.value)} />
+              <input type="number" placeholder="Cant." className="flex-1 p-2 bg-gray-700 rounded" value={currentQty} onChange={e => setCurrentQty(e.target.value)} />
+            </div>
+            <button onClick={handleAddPurchase} className="w-full p-2 bg-blue-600 rounded"> + Añadir compra</button>
+            <p className="text-sm text-gray-400">Compras añadidas: {purchases.length}</p>
             <div className="text-lg mt-6 text-center bg-gray-900 p-4 rounded-lg">
               Precio Promedio: <span className="font-bold text-blue-400">${dcaResult.avgPrice.toFixed(2)}</span><br/>
               Total de Acciones: <span className="font-bold text-green-400">{dcaResult.totalQuantity}</span>
             </div>
+            <button onClick={handleVerHistorial} disabled={!dcaResult.isValid || !ticker} className="w-full p-2 bg-green-600 rounded disabled:bg-gray-600">
+              Ver historial de {ticker || 'Acción'}
+            </button>
           </div>
         )}
       </div>
