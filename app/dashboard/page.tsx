@@ -103,26 +103,17 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <header className="flex justify-between items-center mb-8 bg-gray-800 p-6 rounded-xl shadow-lg relative">
-        <h1 className="text-2xl font-bold">Bienvenido, {userName ? userName : 'Inversor'}</h1>
-        
         <div className="flex items-center gap-4">
-          {userProfile?.role === 'advisor' && (
-            <div className="flex items-center gap-2 bg-green-900/30 text-green-400 px-4 py-2 rounded-full text-sm font-semibold border border-green-700">
-              <UserCheck size={16} />
-              Asesor Certificado CNV
-            </div>
-          )}
-
           <div className="relative" ref={menuRef}>
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              className="p-2 rounded-md hover:bg-gray-700 transition-colors"
             >
-              <Settings size={18} /> Herramientas
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
 
             {isMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 py-1">
+              <div className="absolute left-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 py-1">
                 {[
                   { icon: MessageSquare, label: 'Chatbot Financiero' },
                   { icon: Newspaper, label: 'Noticias del Mercado' },
@@ -137,6 +128,16 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+          <h1 className="text-2xl font-bold">Bienvenido, {userName ? userName : 'Inversor'}</h1>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          {userProfile?.role === 'advisor' && (
+            <div className="flex items-center gap-2 bg-green-900/30 text-green-400 px-4 py-2 rounded-full text-sm font-semibold border border-green-700">
+              <UserCheck size={16} />
+              Asesor Certificado CNV
+            </div>
+          )}
         </div>
       </header>
 
