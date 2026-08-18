@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { searchStocks } from '../actions/finance'
 
 export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: { isOpen: boolean; onClose: () => void; defaultMode: string }) {
   const router = useRouter()
@@ -12,17 +13,37 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
     else if (defaultMode === 'Precio Promedio (DCA)') setMode('dca')
   }, [defaultMode, isOpen])
   
-  const [compound, setCompound] = useState({ initial: 1000, monthly: 100, rate: 8, years: 10 })
-  const [trade, setTrade] = useState({ buy: 100, sell: 120, quantity: 10, years: 0 })
+  const [compound, setCompound] = useState({ initial: '', monthly: '', rate: '', years: '' })
+  const [trade, setTrade] = useState({ buy: '', sell: '', quantity: '', years: '' })
   const [purchases, setPurchases] = useState<{price: number, quantity: number}[]>([])
   const [currentPrice, setCurrentPrice] = useState('')
   const [currentQty, setCurrentQty] = useState('')
   const [ticker, setTicker] = useState('')
+  const [suggestions, setSuggestions] = useState<{symbol: string, name: string}[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+
+  // Debounce buscador de ticker para DCA
+  useEffect(() => {
+    if (mode === 'dca' && ticker.length > 1) {
+      const timer = setTimeout(async () => {
+        const results = await searchStocks(ticker)
+        setSuggestions(results)
+        setShowDropdown(true)
+      }, 300)
+      return () => clearTimeout(timer)
+    } else {
+      setSuggestions([])
+      setShowDropdown(false)
+    }
+  }, [ticker, mode])
 
   if (!isOpen) return null
 
   const calcCompound = () => {
-    const { initial, monthly, rate, years } = compound
+    const initial = parseFloat(compound.initial) || 0
+    const monthly = parseFloat(compound.monthly) || 0
+    const rate = parseFloat(compound.rate) || 0
+    const years = parseFloat(compound.years) || 0
     const r = rate / 100 / 12
     const n = years * 12
     let futureValue = initial * Math.pow(1 + r, n)
@@ -34,11 +55,14 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
   }
 
   const calcTrade = () => {
-    const { buy, sell, quantity, years } = trade
+    const buy = parseFloat(trade.buy) || 0
+    const sell = parseFloat(trade.sell) || 0
+    const quantity = parseFloat(trade.quantity) || 0
+    const years = parseFloat(trade.years) || 0
     const totalCost = buy * quantity
     const totalValue = sell * quantity
     const pnl = totalValue - totalCost
-    const pct = (pnl / totalCost) * 100
+    const pct = totalCost > 0 ? (pnl / totalCost) * 100 : 0
     
     let annualized = 0
     if (years > 0 && buy > 0) {
@@ -92,19 +116,19 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1">Capital Inicial ($)</label>
-              <input type="number" placeholder="1000" className="w-full p-2 bg-gray-700 rounded" onChange={e => setCompound({...compound, initial: +e.target.value})} />
+              <input type="number" placeholder="1000" className="w-full p-2 bg-gray-700 rounded" value={compound.initial} onChange={e => setCompound({...compound, initial: e.target.value})} />
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-1">Aporte Mensual ($)</label>
-              <input type="number" placeholder="100" className="w-full p-2 bg-gray-700 rounded" onChange={e => setCompound({...compound, monthly: +e.target.value})} />
+              <input type="number" placeholder="100" className="w-full p-2 bg-gray-700 rounded" value={compound.monthly} onChange={e => setCompound({...compound, monthly: e.target.value})} />
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-1">Tasa de Interés Anual (%)</label>
-              <input type="number" placeholder="8" className="w-full p-2 bg-gray-700 rounded" onChange={e => setCompound({...compound, rate: +e.target.value})} />
+              <input type="number" placeholder="8" className="w-full p-2 bg-gray-700 rounded" value={compound.rate} onChange={e => setCompound({...compound, rate: e.target.value})} />
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-1">Años de Inversión</label>
-              <input type="number" placeholder="10" className="w-full p-2 bg-gray-700 rounded" onChange={e => setCompound({...compound, years: +e.target.value})} />
+              <input type="number" placeholder="10" className="w-full p-2 bg-gray-700 rounded" value={compound.years} onChange={e => setCompound({...compound, years: e.target.value})} />
             </div>
             <div className="text-lg mt-6 text-center bg-gray-900 p-4 rounded-lg">
               Monto Final: <span className="font-bold text-green-400">${compoundResult.final.toFixed(2)}</span><br/>
@@ -115,24 +139,24 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1">Precio de Compra ($)</label>
-              <input type="number" placeholder="100" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, buy: +e.target.value})} />
+              <input type="number" placeholder="100" className="w-full p-2 bg-gray-700 rounded" value={trade.buy} onChange={e => setTrade({...trade, buy: e.target.value})} />
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-1">Precio de Venta / Actual ($)</label>
-              <input type="number" placeholder="120" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, sell: +e.target.value})} />
+              <input type="number" placeholder="120" className="w-full p-2 bg-gray-700 rounded" value={trade.sell} onChange={e => setTrade({...trade, sell: e.target.value})} />
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-1">Cantidad de Acciones</label>
-              <input type="number" placeholder="10" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, quantity: +e.target.value})} />
+              <input type="number" placeholder="10" className="w-full p-2 bg-gray-700 rounded" value={trade.quantity} onChange={e => setTrade({...trade, quantity: e.target.value})} />
             </div>
             <div>
               <label className="block text-sm text-gray-400 mb-1">Tiempo de tenencia (Años) - Opcional</label>
-              <input type="number" placeholder="1" className="w-full p-2 bg-gray-700 rounded" onChange={e => setTrade({...trade, years: +e.target.value})} />
+              <input type="number" placeholder="1" className="w-full p-2 bg-gray-700 rounded" value={trade.years} onChange={e => setTrade({...trade, years: e.target.value})} />
             </div>
             <div className="text-lg mt-6 text-center bg-gray-900 p-4 rounded-lg">
               Ganancia/Pérdida Neta: <span className={`font-bold ${tradeResult.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>${tradeResult.pnl.toFixed(2)}</span><br/>
               Retorno Total: <span className={`font-bold ${tradeResult.pct >= 0 ? 'text-green-400' : 'text-red-400'}`}>{tradeResult.pct.toFixed(2)}%</span>
-              {trade.years > 0 && (
+              {parseFloat(trade.years) > 0 && (
                 <>
                   <br/>Retorno Anualizado: <span className={`font-bold ${tradeResult.annualized >= 0 ? 'text-green-400' : 'text-red-400'}`}>{tradeResult.annualized.toFixed(2)}%</span>
                 </>
@@ -140,13 +164,25 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <input type="text" placeholder="Ticker (ej: AAPL)" className="w-full p-2 bg-gray-700 rounded" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase())} />
+          <div className="space-y-4 relative">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1">Ticker</label>
+              <input type="text" placeholder="ej: AAPL" className="w-full p-2 bg-gray-700 rounded" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase())} />
+              {showDropdown && suggestions.length > 0 && (
+                <ul className="absolute w-full bg-gray-800 border border-gray-700 rounded-md mt-1 max-h-48 overflow-y-auto z-50">
+                  {suggestions.map((s) => (
+                    <li key={s.symbol} onClick={() => { setTicker(s.symbol); setShowDropdown(false); }} className="px-4 py-2 hover:bg-gray-700 cursor-pointer">
+                      <span className="font-bold">{s.symbol}</span> - <span className="text-gray-400 text-sm">{s.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className="flex gap-2">
               <input type="number" placeholder="Precio $" className="flex-1 p-2 bg-gray-700 rounded" value={currentPrice} onChange={e => setCurrentPrice(e.target.value)} />
               <input type="number" placeholder="Cant." className="flex-1 p-2 bg-gray-700 rounded" value={currentQty} onChange={e => setCurrentQty(e.target.value)} />
             </div>
-            <button onClick={handleAddPurchase} className="w-full p-2 bg-blue-600 rounded"> + Añadir compra</button>
+            <button onClick={handleAddPurchase} disabled={!ticker || !currentPrice || !currentQty} className="w-full p-2 bg-blue-600 rounded disabled:bg-gray-600"> + Añadir compra</button>
             <p className="text-sm text-gray-400">Compras añadidas: {purchases.length}</p>
             <div className="text-lg mt-6 text-center bg-gray-900 p-4 rounded-lg">
               Precio Promedio: <span className="font-bold text-blue-400">${dcaResult.avgPrice.toFixed(2)}</span><br/>
