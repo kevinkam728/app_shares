@@ -6,11 +6,13 @@ import { createClient } from '@/lib/supabase/client'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell } from 'lucide-react'
 import StockHeatmap from '@/components/StockHeatmap'
+import InvestmentCalculator from '@/components/InvestmentCalculator'
 
 export default function DashboardPage() {
   const [userProfile, setUserProfile] = useState<any>(null)
   const [userName, setUserName] = useState("Usuario")
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -113,15 +115,19 @@ export default function DashboardPage() {
             </button>
 
             {isMenuOpen && (
-              <div className="absolute left-0 mt-2 w-56 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 py-1">
+              <div className="absolute left-0 mt-2 w-72 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 py-1">
                 {[
-                  { icon: MessageSquare, label: 'Chatbot Financiero' },
-                  { icon: Newspaper, label: 'Noticias del Mercado' },
-                  { icon: Calendar, label: 'Calendario Económico' },
-                  { icon: Calculator, label: 'Calculadora de Inversiones' },
-                  { icon: Bell, label: 'Mis Alertas de Precios' },
+                  { icon: MessageSquare, label: 'Chatbot Financiero', action: () => {} },
+                  { icon: Newspaper, label: 'Noticias del Mercado', action: () => {} },
+                  { icon: Calendar, label: 'Calendario Económico', action: () => {} },
+                  { icon: Calculator, label: 'Calculadora de Inversiones', action: () => { setIsCalculatorOpen(true); setIsMenuOpen(false); } },
+                  { icon: Bell, label: 'Mis Alertas de Precios', action: () => {} },
                 ].map((item, i) => (
-                  <button key={i} className="flex w-full items-center gap-3 px-4 py-3 text-sm hover:bg-gray-700 transition-colors">
+                  <button 
+                    key={i} 
+                    onClick={item.action}
+                    className="flex w-full items-center gap-3 px-4 py-3 text-sm hover:bg-gray-700 transition-colors whitespace-nowrap"
+                  >
                     <item.icon size={18} /> {item.label}
                   </button>
                 ))}
@@ -177,7 +183,7 @@ export default function DashboardPage() {
         <StockHeatmap />
       </div>
 
-      {stock && (
+        {stock && (
         <div className="bg-gray-800 p-8 rounded-xl shadow-xl">
           <div className="flex justify-between items-start mb-6">
             <div>
@@ -207,6 +213,8 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      <InvestmentCalculator isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} />
     </div>
   )
 }
