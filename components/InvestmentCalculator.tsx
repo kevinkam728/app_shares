@@ -1,20 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [mode, setMode] = useState<'compound' | 'trade'>('compound')
+export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: { isOpen: boolean; onClose: () => void; defaultMode: string }) {
+  const [mode, setMode] = useState<'compound' | 'trade' | 'dca'>('compound')
   
-  // States
+  useEffect(() => {
+    if (defaultMode === 'Interés Compuesto') setMode('compound')
+    else if (defaultMode === 'Precio Promedio (DCA)') setMode('dca')
+  }, [defaultMode, isOpen])
+  
   const [compound, setCompound] = useState({ initial: 1000, monthly: 100, rate: 8, years: 10 })
   const [trade, setTrade] = useState({ buy: 100, sell: 120, quantity: 10, years: 0 })
+  const [purchases, setPurchases] = useState([{ price: 0, quantity: 0 }])
 
   if (!isOpen) return null
 
-  // Calculations
   const calcCompound = () => {
     const { initial, monthly, rate, years } = compound
-    // ... (mantener lógica existente)
     const r = rate / 100 / 12
     const n = years * 12
     let futureValue = initial * Math.pow(1 + r, n)
@@ -40,8 +43,16 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
     return { pnl, pct, annualized }
   }
 
+  const calcDCA = () => {
+    const totalCost = purchases.reduce((acc, p) => acc + (p.price * p.quantity), 0)
+    const totalQuantity = purchases.reduce((acc, p) => acc + p.quantity, 0)
+    const avgPrice = totalQuantity > 0 ? totalCost / totalQuantity : 0
+    return { avgPrice, totalQuantity }
+  }
+
   const compoundResult = calcCompound()
   const tradeResult = calcTrade()
+  const dcaResult = calcDCA()
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
@@ -49,9 +60,10 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">X</button>
         <h2 className="text-xl font-bold mb-4">Calculadora Financiera</h2>
         
-        <select className="w-full p-2 mb-4 bg-gray-700 rounded" onChange={(e) => setMode(e.target.value as 'compound' | 'trade')}>
+        <select className="w-full p-2 mb-4 bg-gray-700 rounded" value={mode} onChange={(e) => setMode(e.target.value as any)}>
           <option value="compound">Interés Compuesto</option>
           <option value="trade">Calculadora de Trade</option>
+          <option value="dca">Precio Promedio (DCA)</option>
         </select>
 
         {mode === 'compound' ? (
@@ -77,7 +89,7 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
               Ganancia Total: <span className="font-bold text-blue-400">${compoundResult.gain.toFixed(2)}</span>
             </div>
           </div>
-        ) : (
+        ) : mode === 'trade' ? (
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1">Precio de Compra ($)</label>
@@ -103,6 +115,25 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
                   <br/>Retorno Anualizado: <span className={`font-bold ${tradeResult.annualized >= 0 ? 'text-green-400' : 'text-red-400'}`}>{tradeResult.annualized.toFixed(2)}%</span>
                 </>
               )}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {purchases.map((p, i) => (
+              <div key={i} className="flex gap-2">
+                <input type="number" placeholder="Precio $" className="flex-1 p-2 bg-gray-700 rounded" onChange={e => {
+                  const newP = [...purchases]; newP[i].price = +e.target.value; setPurchases(newP);
+                }} />
+                <input type="number" placeholder="Cant." className="flex-1 p-2 bg-gray-700 rounded" onChange={e => {
+                  const newP = [...purchases]; newP[i].quantity = +e.target.value; setPurchases(newP);
+                }} />
+                {i > 0 && <button onClick={() => setPurchases(purchases.filter((_, idx) => idx !== i))} className="text-red-500">X</button>}
+              </div>
+            ))}
+            <button onClick={() => setPurchases([...purchases, { price: 0, quantity: 0 }])} className="w-full p-2 bg-blue-600 rounded"> + Añadir compra</button>
+            <div className="text-lg mt-6 text-center bg-gray-900 p-4 rounded-lg">
+              Precio Promedio: <span className="font-bold text-blue-400">${dcaResult.avgPrice.toFixed(2)}</span><br/>
+              Total de Acciones: <span className="font-bold text-green-400">{dcaResult.totalQuantity}</span>
             </div>
           </div>
         )}

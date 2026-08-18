@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState("Usuario")
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
+  const [calcMode, setCalcMode] = useState('Interés Compuesto')
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -120,7 +121,8 @@ export default function DashboardPage() {
                   { icon: MessageSquare, label: 'Chatbot Financiero', action: () => {} },
                   { icon: Newspaper, label: 'Noticias del Mercado', action: () => {} },
                   { icon: Calendar, label: 'Calendario Económico', action: () => {} },
-                  { icon: Calculator, label: 'Calculadora de Inversiones', action: () => { setIsCalculatorOpen(true); setIsMenuOpen(false); } },
+                  { icon: Calculator, label: 'Interés Compuesto', action: () => { setCalcMode('Interés Compuesto'); setIsCalculatorOpen(true); setIsMenuOpen(false); } },
+                  { icon: Calculator, label: 'Precio Promedio (DCA)', action: () => { setCalcMode('Precio Promedio (DCA)'); setIsCalculatorOpen(true); setIsMenuOpen(false); } },
                   { icon: Bell, label: 'Mis Alertas de Precios', action: () => {} },
                 ].map((item, i) => (
                   <button 
@@ -214,7 +216,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <InvestmentCalculator isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} />
+      <InvestmentCalculator isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} defaultMode={calcMode} />
     </div>
   )
 }
