@@ -4,14 +4,14 @@ export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
     
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'llama3-8b-8192',
         messages: messages,
       }),
     });
@@ -19,7 +19,10 @@ export async function POST(req: Request) {
     const data = await response.json();
     
     if (!response.ok) {
-        throw new Error(data.error?.message || 'Error en la llamada a OpenAI');
+        return NextResponse.json(
+          { error: data.error?.message || 'Error desconocido de OpenAI' }, 
+          { status: response.status }
+        );
     }
 
     return NextResponse.json(data.choices[0].message);
