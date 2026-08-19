@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { getStockData, getHistoricalData, searchStocks } from '../actions/finance'
 import { createClient } from '@/lib/supabase/client'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
@@ -9,6 +10,7 @@ import StockHeatmap from '@/components/StockHeatmap'
 import InvestmentCalculator from '@/components/InvestmentCalculator'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [userProfile, setUserProfile] = useState<any>(null)
   const [userName, setUserName] = useState("Usuario")
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -119,7 +121,7 @@ export default function DashboardPage() {
               <div className="absolute left-0 mt-2 w-72 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 py-1">
                 {[
                   { icon: MessageSquare, label: 'Chatbot Financiero', action: () => {} },
-                  { icon: Newspaper, label: 'Noticias del Mercado', action: () => {} },
+                  { icon: Newspaper, label: 'Noticias del Mercado', action: () => { router.push('/dashboard/news'); setIsMenuOpen(false); } },
                   { icon: Calendar, label: 'Calendario Económico', action: () => {} },
                   { icon: Calculator, label: 'Interés Compuesto', action: () => { setCalcMode('Interés Compuesto'); setIsCalculatorOpen(true); setIsMenuOpen(false); } },
                   { icon: Calculator, label: 'Precio Promedio (DCA)', action: () => { setCalcMode('Precio Promedio (DCA)'); setIsCalculatorOpen(true); setIsMenuOpen(false); } },

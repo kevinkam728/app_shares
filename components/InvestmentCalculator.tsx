@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { searchStocks } from '../actions/finance'
+import { searchStocks } from '@/app/actions/finance'
 
 export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: { isOpen: boolean; onClose: () => void; defaultMode: string }) {
   const router = useRouter()
@@ -18,6 +18,7 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
   const [purchases, setPurchases] = useState<{price: number, quantity: number}[]>([])
   const [currentPrice, setCurrentPrice] = useState('')
   const [currentQty, setCurrentQty] = useState('')
+  const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
   const [ticker, setTicker] = useState('')
   const [suggestions, setSuggestions] = useState<{symbol: string, name: string}[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -25,11 +26,16 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
   // Debounce buscador de ticker para DCA
   useEffect(() => {
     if (mode === 'dca' && ticker.length > 1) {
-      const timer = setTimeout(async () => {
-        const results = await searchStocks(ticker)
-        setSuggestions(results)
-        setShowDropdown(true)
-      }, 300)
+        const timer = setTimeout(async () => {
+          try {
+            const results = await searchStocks(ticker)
+            setSuggestions(results)
+            setShowDropdown(true)
+          } catch (error) {
+            console.error("Error searching stocks:", error)
+            setSuggestions([])
+          }
+        }, 300)
       return () => clearTimeout(timer)
     } else {
       setSuggestions([])
@@ -84,6 +90,13 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
     const qty = Number(currentQty)
     if (price > 0 && qty > 0) {
       setPurchases([...purchases, { price, quantity: qty }])
+      
+      // Persistencia inmediata
+      const portfolio = JSON.parse(localStorage.getItem('global_portfolio') || '{}')
+      if (!portfolio[ticker]) portfolio[ticker] = []
+      portfolio[ticker].push({ date: currentDate, price, quantity: qty })
+      localStorage.setItem('global_portfolio', JSON.stringify(portfolio))
+      
       setCurrentPrice('')
       setCurrentQty('')
     }
@@ -93,11 +106,8 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
   const tradeResult = calcTrade()
   const dcaResult = calcDCA()
 
-  const handleVerHistorial = () => {
-    if (ticker && dcaResult.isValid) {
-      localStorage.setItem(`dca_history_${ticker}`, JSON.stringify(purchases))
-      router.push(`/dashboard/history/${ticker}`)
-    }
+  const handleVerPortfolio = () => {
+    router.push('/dashboard/history')
   }
 
   return (
@@ -170,17 +180,18 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
               <input type="text" placeholder="ej: AAPL" className="w-full p-2 bg-gray-700 rounded" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase())} />
               {showDropdown && suggestions.length > 0 && (
                 <ul className="absolute w-full bg-gray-800 border border-gray-700 rounded-md mt-1 max-h-48 overflow-y-auto z-50">
-                  {suggestions.map((s) => (
-                    <li key={s.symbol} onClick={() => { setTicker(s.symbol); setShowDropdown(false); }} className="px-4 py-2 hover:bg-gray-700 cursor-pointer">
+                  {suggestions.map((s, index) => (
+                    <li key={`${s.symbol}-${index}`} onClick={() => { setTicker(s.symbol); setShowDropdown(false); }} className="px-4 py-2 hover:bg-gray-700 cursor-pointer">
                       <span className="font-bold">{s.symbol}</span> - <span className="text-gray-400 text-sm">{s.name}</span>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-            <div className="flex gap-2">
-              <input type="number" placeholder="Precio $" className="flex-1 p-2 bg-gray-700 rounded" value={currentPrice} onChange={e => setCurrentPrice(e.target.value)} />
-              <input type="number" placeholder="Cant." className="flex-1 p-2 bg-gray-700 rounded" value={currentQty} onChange={e => setCurrentQty(e.target.value)} />
+            <div className="grid grid-cols-3 gap-3 w-full">
+              <input type="date" className="w-full p-2 bg-gray-700 rounded" value={currentDate} onChange={e => setCurrentDate(e.target.value)} />
+              <input type="number" placeholder="Precio $" className="w-full p-2 bg-gray-700 rounded" value={currentPrice} onChange={e => setCurrentPrice(e.target.value)} />
+              <input type="number" placeholder="Cant." className="w-full p-2 bg-gray-700 rounded" value={currentQty} onChange={e => setCurrentQty(e.target.value)} />
             </div>
             <button onClick={handleAddPurchase} disabled={!ticker || !currentPrice || !currentQty} className="w-full p-2 bg-blue-600 rounded disabled:bg-gray-600"> + Añadir compra</button>
             <p className="text-sm text-gray-400">Compras añadidas: {purchases.length}</p>
@@ -188,8 +199,8 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
               Precio Promedio: <span className="font-bold text-blue-400">${dcaResult.avgPrice.toFixed(2)}</span><br/>
               Total de Acciones: <span className="font-bold text-green-400">{dcaResult.totalQuantity}</span>
             </div>
-            <button onClick={handleVerHistorial} disabled={!dcaResult.isValid || !ticker} className="w-full p-2 bg-green-600 rounded disabled:bg-gray-600">
-              Ver historial de {ticker || 'Acción'}
+            <button onClick={handleVerPortfolio} className="w-full p-2 bg-green-600 rounded">
+              Ver Mi Portafolio Completo
             </button>
           </div>
         )}
