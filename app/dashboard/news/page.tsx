@@ -6,15 +6,25 @@ import { useRouter } from 'next/navigation'
 export default function NewsPage() {
   const router = useRouter()
   const [news, setNews] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [ticker, setTicker] = useState('')
+  const [searchTrigger, setSearchTrigger] = useState(0)
 
   useEffect(() => {
     const fetchNews = async () => {
+      setLoading(true)
+      setError(null)
       try {
         const token = process.env.NEXT_PUBLIC_FINNHUB_API_KEY
-        const response = await fetch(`https://finnhub.io/api/v1/news?category=general&token=${token}`)
+        let url = `https://finnhub.io/api/v1/news?category=general&token=${token}`
+        
+        if (ticker.trim()) {
+            url = `https://finnhub.io/api/v1/company-news?symbol=${ticker.toUpperCase()}&from=${selectedDate}&to=${selectedDate}&token=${token}`
+        }
+
+        const response = await fetch(url)
         if (!response.ok) throw new Error('Error al cargar noticias')
         
         const data = await response.json()
@@ -27,11 +37,14 @@ export default function NewsPage() {
     }
 
     fetchNews()
-  }, [])
+  }, [searchTrigger])
 
-  const filteredNews = news.filter(article => 
-    new Date(article.datetime * 1000).toISOString().split('T')[0] === selectedDate
-  )
+  const filteredNews = ticker.trim() 
+    ? news 
+    : news.filter(article => {
+        const articleDate = new Date(article.datetime * 1000).toLocaleDateString('en-CA')
+        return articleDate === selectedDate
+    })
 
   if (loading) return <div className="min-h-screen bg-gray-900 text-white p-8">Cargando noticias...</div>
   if (error) return <div className="min-h-screen bg-gray-900 text-white p-8">{error}</div>
@@ -45,11 +58,21 @@ export default function NewsPage() {
                 Volver al Dashboard
             </button>
             <input 
+                type="text"
+                placeholder="Buscar Ticker (ej: AAPL)..."
+                className="p-2 bg-gray-800 rounded border border-gray-700"
+                value={ticker}
+                onChange={e => setTicker(e.target.value)}
+            />
+            <input 
                 type="date" 
                 className="p-2 bg-gray-800 rounded border border-gray-700"
                 value={selectedDate} 
                 onChange={e => setSelectedDate(e.target.value)} 
             />
+            <button onClick={() => setSearchTrigger(prev => prev + 1)} className="p-2 bg-green-600 rounded hover:bg-green-500">
+                Buscar Noticias
+            </button>
         </div>
       </div>
       

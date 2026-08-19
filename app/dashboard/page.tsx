@@ -122,7 +122,7 @@ export default function DashboardPage() {
                 {[
                   { icon: MessageSquare, label: 'Chatbot Financiero', action: () => {} },
                   { icon: Newspaper, label: 'Noticias del Mercado', action: () => { router.push('/dashboard/news'); setIsMenuOpen(false); } },
-                  { icon: Calendar, label: 'Calendario Económico', action: () => {} },
+                  { icon: Calendar, label: 'Calendario de Ganancias', action: () => { router.push('/dashboard/calendar'); setIsMenuOpen(false); } },
                   { icon: Calculator, label: 'Interés Compuesto', action: () => { setCalcMode('Interés Compuesto'); setIsCalculatorOpen(true); setIsMenuOpen(false); } },
                   { icon: Calculator, label: 'Precio Promedio (DCA)', action: () => { setCalcMode('Precio Promedio (DCA)'); setIsCalculatorOpen(true); setIsMenuOpen(false); } },
                   { icon: Bell, label: 'Mis Alertas de Precios', action: () => {} },
