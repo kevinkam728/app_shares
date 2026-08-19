@@ -120,7 +120,7 @@ export default function DashboardPage() {
             {isMenuOpen && (
               <div className="absolute left-0 mt-2 w-72 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 py-1">
                 {[
-                  { icon: MessageSquare, label: 'Chatbot Financiero', action: () => {} },
+                  { icon: MessageSquare, label: 'Chatbot Financiero', action: () => { router.push('/dashboard/chatbot'); setIsMenuOpen(false); } },
                   { icon: Newspaper, label: 'Noticias del Mercado', action: () => { router.push('/dashboard/news'); setIsMenuOpen(false); } },
                   { icon: Calendar, label: 'Calendario de Ganancias', action: () => { router.push('/dashboard/calendar'); setIsMenuOpen(false); } },
                   { icon: Calculator, label: 'Interés Compuesto', action: () => { setCalcMode('Interés Compuesto'); setIsCalculatorOpen(true); setIsMenuOpen(false); } },
