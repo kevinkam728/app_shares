@@ -117,10 +117,8 @@ export default function ChatbotPage() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((m, i) => (
           <div key={i} className={`p-3 rounded-lg max-w-md ${m.role === 'user' ? 'bg-blue-600 ml-auto' : 'bg-gray-700'}`}>
-            <div className="text-sm">
-                <ReactMarkdown
-                  className="flex flex-col gap-2 [&>ul]:list-disc [&>ul]:list-inside [&>p]:mb-2 [&>strong]:font-bold"
-                >
+            <div className="text-sm flex flex-col gap-2 [&>ul]:list-disc [&>ul]:list-inside [&>p]:mb-2 [&>strong]:font-bold">
+                <ReactMarkdown>
                   {m.content}
                 </ReactMarkdown>
             </div>
