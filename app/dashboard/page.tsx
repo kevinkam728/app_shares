@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link';
 import { getStockData, getHistoricalData, searchStocks } from '../actions/finance'
 import { createClient } from '@/lib/supabase/client'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
@@ -109,6 +110,9 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <header className="flex justify-between items-center mb-8 bg-gray-800 p-6 rounded-xl shadow-lg relative">
         <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="flex items-center gap-2 px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors">
+            🏠 Volver al Inicio
+          </Link>
           <div className="relative" ref={menuRef}>
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}

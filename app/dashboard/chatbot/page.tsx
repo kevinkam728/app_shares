@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 
 const MENTORS = [
@@ -105,6 +106,7 @@ export default function ChatbotPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       <header className="p-4 bg-gray-800 flex items-center gap-4">
+        <Link href="/dashboard" className="p-2 bg-gray-700 rounded hover:bg-gray-600">🏠 Inicio</Link>
         <button onClick={() => setSelectedMentor(null)} className="p-2 bg-gray-700 rounded hover:bg-gray-600">← Cambiar Mentor</button>
         {selectedMentor.image ? (
             <img src={selectedMentor.image} alt={selectedMentor.name} className="w-10 h-10 rounded-full object-cover" />
