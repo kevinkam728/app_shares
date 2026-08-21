@@ -8,7 +8,7 @@ export async function POST(req: Request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer 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'
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_GROQ_API_KEY}`
       },
       body: JSON.stringify({
         model: 'openai/gpt-oss-20b',
