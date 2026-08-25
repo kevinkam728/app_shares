@@ -126,6 +126,7 @@ export default function DashboardPage() {
                     { icon: Bell, label: 'Mis Alertas de Precios', action: () => {} },
                     { icon: UserCheck, label: 'Ver Mi Portafolio', action: () => { router.push('/history'); setIsMenuOpen(false); } },
                     { icon: Settings, label: 'Mi Perfil', action: () => { router.push('/profile'); setIsMenuOpen(false); } },
+                    { icon: MessageSquare, label: 'Comunidad', action: () => { router.push('/community'); setIsMenuOpen(false); } },
                   ].map((item, i) => (
                     <button 
                       key={i} 
