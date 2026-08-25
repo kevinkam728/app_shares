@@ -19,11 +19,10 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+  // Permitir acceso público a /, pero proteger rutas privadas
+  if (!user && (request.nextUrl.pathname.startsWith('/history') || request.nextUrl.pathname.startsWith('/chatbot') || request.nextUrl.pathname.startsWith('/news') || request.nextUrl.pathname.startsWith('/calendar'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  return response
 }
 
-export const config = { matcher: ['/dashboard/:path*'] }
+export const config = { matcher: ['/history/:path*', '/chatbot/:path*', '/news/:path*', '/calendar/:path*'] }

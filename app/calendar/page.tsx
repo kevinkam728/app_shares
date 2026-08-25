@@ -55,10 +55,11 @@ export default function EarningsCalendarPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="flex items-center mb-8 gap-4">
-        <button onClick={() => router.push('/dashboard')} className="p-3 bg-gray-700 rounded-lg hover:bg-gray-600">
-            Volver al Dashboard
-        </button>
+      <button onClick={() => router.push('/')} className="fixed top-6 left-6 z-50 p-3 bg-gray-700 rounded-lg hover:bg-gray-600">
+        Volver
+      </button>
+
+      <div className="flex items-center mb-8 gap-4 mt-16">
         <h1 className="text-3xl font-bold">Calendario de Ganancias (Earnings)</h1>
       </div>
       

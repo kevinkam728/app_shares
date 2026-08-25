@@ -4,14 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { searchStocks } from '@/app/actions/finance'
 
-export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: { isOpen: boolean; onClose: () => void; defaultMode: string }) {
+export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: boolean; onClose: () => void; }) {
   const router = useRouter()
   const [mode, setMode] = useState<'compound' | 'trade' | 'dca'>('compound')
-  
-  useEffect(() => {
-    if (defaultMode === 'Interés Compuesto') setMode('compound')
-    else if (defaultMode === 'Precio Promedio (DCA)') setMode('dca')
-  }, [defaultMode, isOpen])
   
   const [compound, setCompound] = useState({ initial: '', monthly: '', rate: '', years: '' })
   const [trade, setTrade] = useState({ buy: '', sell: '', quantity: '', years: '' })
@@ -107,7 +102,7 @@ export default function InvestmentCalculator({ isOpen, onClose, defaultMode }: {
   const dcaResult = calcDCA()
 
   const handleVerPortfolio = () => {
-    router.push('/dashboard/history')
+    router.push('/history')
   }
 
   return (

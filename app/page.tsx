@@ -1,29 +1,242 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
+'use client'
 
-export default async function LandingPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link';
+import { getStockData, getHistoricalData, searchStocks } from './actions/finance'
+import { createClient } from '@/lib/supabase/client'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell } from 'lucide-react'
+import StockHeatmap from '@/components/StockHeatmap'
+import InvestmentCalculator from '@/components/InvestmentCalculator'
 
-  if (user) {
-    redirect('/dashboard')
+export default function DashboardPage() {
+  const router = useRouter()
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [userName, setUserName] = useState("Usuario")
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [stock, setStock] = useState<any>(null)
+  const [history, setHistory] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
+  const supabase = createClient()
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Cerrar menús al hacer clic fuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setPageLoading(false)
+        return
+      }
+
+      let { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      
+      if (error || !data) {
+        // Intentar crear perfil si no existe
+        const { data: newProfile, error: upsertError } = await supabase.from('profiles').upsert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+          role: 'user'
+        }, { onConflict: 'id' }).select().single()
+        
+        if (!upsertError) {
+          data = newProfile
+        }
+      }
+      
+      if (data) {
+        setUserProfile(data)
+        // Priorizar full_name de profiles, luego metadatos, luego email
+        const nameToUse = data.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario'
+        setUserName(nameToUse.charAt(0).toUpperCase() + nameToUse.slice(1))
+      }
+      setPageLoading(false)
+    }
+    fetchProfile()
+  }, [])
+
+  // Efecto para debounce de búsqueda
+  useEffect(() => {
+    if (query.length > 1) {
+      const timer = setTimeout(async () => {
+        const results = await searchStocks(query)
+        setSuggestions(results)
+        setShowDropdown(true)
+      }, 300)
+      return () => clearTimeout(timer)
+    } else {
+      setSuggestions([])
+      setShowDropdown(false)
+    }
+  }, [query])
+
+  const handleSearch = async (ticker: string) => {
+    setQuery(ticker)
+    setShowDropdown(false)
+    setLoading(true)
+    const [stockData, historyData] = await Promise.all([
+      getStockData(ticker),
+      getHistoricalData(ticker)
+    ])
+    setStock(stockData)
+    setHistory(historyData || [])
+    setLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-8 text-center">
-      <h1 className="text-5xl font-extrabold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-        Tu Simulador de Inversiones en Tiempo Real
-      </h1>
-      <p className="text-xl text-gray-400 mb-10 max-w-2xl">
-        Gestiona tu portafolio, analiza acciones en tiempo real y perfecciona tu estrategia sin arriesgar capital real.
-      </p>
-      <Link 
-        href="/login" 
-        className="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-full font-bold text-lg transition-all transform hover:scale-105"
-      >
-        Empezar a Invertir
-      </Link>
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      
+      <header className="flex justify-between items-center mb-8 bg-gray-800 p-6 rounded-xl shadow-lg relative">
+        <div className="flex items-center gap-4">
+          {/* Menú deshabilitado o simplificado si no hay usuario */}
+          {userProfile && (
+            <div className="relative" ref={menuRef}>
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 rounded-md hover:bg-gray-700 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+              </button>
+
+              {isMenuOpen && (
+                <div className="absolute left-0 mt-2 w-72 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 py-1">
+                  {[
+                    { icon: MessageSquare, label: 'Chatbot Financiero', action: () => { router.push('/chatbot'); setIsMenuOpen(false); } },
+                    { icon: Newspaper, label: 'Noticias del Mercado', action: () => { router.push('/news'); setIsMenuOpen(false); } },
+                    { icon: Calendar, label: 'Calendario de Ganancias', action: () => { router.push('/calendar'); setIsMenuOpen(false); } },
+                    { icon: Calculator, label: 'Calculadora Financiera', action: () => { setIsCalculatorOpen(true); setIsMenuOpen(false); } },
+                    { icon: Bell, label: 'Mis Alertas de Precios', action: () => {} },
+                    { icon: UserCheck, label: 'Ver Mi Portafolio', action: () => { router.push('/history'); setIsMenuOpen(false); } },
+                    { icon: Settings, label: 'Mi Perfil', action: () => { router.push('/profile'); setIsMenuOpen(false); } },
+                  ].map((item, i) => (
+                    <button 
+                      key={i} 
+                      onClick={item.action}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-sm hover:bg-gray-700 transition-colors whitespace-nowrap"
+                    >
+                      <item.icon size={18} /> {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <h1 className="text-2xl font-bold">CLINCASH {userProfile ? `- Bienvenido, ${userName}` : ''}</h1>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          {pageLoading ? (
+            <div className="w-24 h-10 animate-pulse bg-gray-700 rounded-md"></div>
+          ) : userProfile ? (
+            <>
+              {userProfile?.role === 'advisor' && (
+                <div className="flex items-center gap-2 bg-green-900/30 text-green-400 px-4 py-2 rounded-full text-sm font-semibold border border-green-700">
+                  <UserCheck size={16} />
+                  Asesor Certificado CNV
+                </div>
+              )}
+              <button 
+                onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }} 
+                className="text-red-400 hover:text-red-300 ml-4 font-medium"
+              >
+                Cerrar Sesión
+              </button>
+            </>
+          ) : (
+            <div className="flex gap-4">
+              <Link href="/login" className="px-4 py-2 text-gray-300 hover:text-white transition-colors font-medium">Iniciar Sesión</Link>
+              <Link href="/register" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium shadow-sm transition-colors">Registrarse</Link>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <div className="relative mb-8" ref={dropdownRef}>
+        <div className="flex gap-2">
+          <input 
+            value={query} 
+            onChange={(e) => setQuery(e.target.value.toUpperCase())}
+            placeholder="Buscar ticker (ej: AAPL)..."
+            className="flex-1 p-3 bg-gray-800 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500"
+          />
+          <button 
+            onClick={() => handleSearch(query)}
+            disabled={loading}
+            className="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 disabled:bg-gray-600 flex items-center gap-2"
+          >
+            {loading ? '...' : <Search size={20} />}
+          </button>
+        </div>
+
+        {showDropdown && suggestions.length > 0 && (
+          <div className="absolute z-10 w-full bg-gray-800 border border-gray-700 rounded-md mt-1 shadow-lg max-h-60 overflow-y-auto">
+            {suggestions.map((s, index) => (
+              <button
+                key={`${s.symbol}-${index}`}
+                onClick={() => handleSearch(s.symbol)}
+                className="w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors"
+              >
+                <span className="font-bold">{s.symbol}</span> - <span className="text-gray-400 text-sm">{s.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-8">
+        <StockHeatmap />
+      </div>
+
+        {stock && (
+        <div className="bg-gray-800 p-8 rounded-xl shadow-xl">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h2 className="text-3xl font-bold">{stock.symbol}</h2>
+              <p className="text-gray-400">{stock.longName}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-4xl font-mono">${stock.regularMarketPrice?.toFixed(2)}</p>
+              <p className={`font-semibold ${stock.regularMarketChangePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {stock.regularMarketChangePercent?.toFixed(2)}%
+              </p>
+            </div>
+          </div>
+
+          <div className="h-80 mt-6">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={history}>
+                <XAxis dataKey="date" hide />
+                <YAxis domain={['auto', 'auto']} hide />
+                <Tooltip 
+                  contentStyle={{backgroundColor: '#1f2937', border: 'none', borderRadius: '8px'}}
+                  itemStyle={{color: '#60a5fa'}}
+                />
+                <Line type="monotone" dataKey="close" stroke="#3b82f6" strokeWidth={3} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      <InvestmentCalculator isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} />
     </div>
   )
 }

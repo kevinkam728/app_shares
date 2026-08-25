@@ -35,7 +35,11 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
-      <h1 className="text-3xl font-bold mb-6">Mi Portafolio Global</h1>
+      <button onClick={() => router.push('/')} className="fixed top-6 left-6 z-50 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded border border-gray-600">
+        Volver
+      </button>
+
+      <h1 className="text-3xl font-bold mb-6 mt-16">Mi Portafolio Global</h1>
       
       <table className="w-full bg-gray-800 rounded-lg overflow-hidden mb-8">
         <thead>
@@ -97,10 +101,6 @@ export default function HistoryPage() {
       </table>
 
       <div className="flex gap-4">
-        <button onClick={() => router.push('/dashboard')} className="p-3 bg-blue-600 rounded-lg hover:bg-blue-500">
-          Volver al Dashboard
-        </button>
-
         {!isConfirmingDelete ? (
             <button onClick={() => setIsConfirmingDelete(true)} className="p-3 bg-red-900 text-red-200 rounded-lg hover:bg-red-800">
                 🗑️ Eliminar Historial

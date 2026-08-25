@@ -6,39 +6,37 @@ export default function StockHeatmap() {
   const container = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Limpiar contenedor antes de inyectar
-    if (container.current) {
-      container.current.innerHTML = ''
-    }
+    // Evitar inyecciones duplicadas en Strict Mode
+    if (!container.current || container.current.querySelector('script')) return
 
-    const script = document.createElement('script')
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js'
+    const script = document.createElement("script")
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js"
+    script.type = "text/javascript"
     script.async = true
     script.innerHTML = JSON.stringify({
-      dataSource: 'SPX500',
-      colorTheme: 'dark',
-      locale: 'es',
-      width: '100%',
-      height: '100%',
-      isTransparent: true,
-      hasTopBanner: false,
-      isEmbedded: true
+      "exchanges": [],
+      "dataSource": "SPX500",
+      "grouping": "sector",
+      "blockSize": "market_cap_basic",
+      "blockColor": "change",
+      "locale": "es",
+      "symbolUrl": "",
+      "colorTheme": "dark",
+      "hasTopBar": false,
+      "isDataSetEnabled": false,
+      "isZoomEnabled": true,
+      "hasSymbolTooltip": true,
+      "width": "100%",
+      "height": "100%"
     })
-    
-    if (container.current) {
-      container.current.appendChild(script)
-    }
-
-    return () => {
-      if (container.current) {
-        container.current.innerHTML = ''
-      }
-    }
+    container.current.appendChild(script)
   }, [])
 
   return (
-    <div className="w-full h-[400px] mb-8 rounded-lg overflow-hidden" ref={container}>
-      <div className="tradingview-widget-container__widget"></div>
+    <div className="w-full mt-6" style={{ height: "600px", minHeight: "600px" }}>
+      <div className="tradingview-widget-container" ref={container} style={{ height: "100%", width: "100%" }}>
+        <div className="tradingview-widget-container__widget" style={{ height: "100%", width: "100%" }}></div>
+      </div>
     </div>
   )
 }

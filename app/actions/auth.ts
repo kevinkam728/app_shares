@@ -62,11 +62,17 @@ export async function signUpAction(formData: FormData) {
 export async function signInAction(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
+  
+  console.log("Intento de login:", email)
+
   const supabase = await createClient()
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
-  if (error) return { error: error.message }
+  if (error) {
+    console.log("Error de login:", error.message)
+    return { error: error.message }
+  }
   
   revalidatePath('/')
   return { success: true }

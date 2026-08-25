@@ -51,12 +51,13 @@ export default function NewsPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="flex justify-between items-center mb-8">
+      <button onClick={() => router.push('/')} className="fixed top-6 left-6 z-50 p-3 bg-gray-700 rounded-lg hover:bg-gray-600">
+        Volver
+      </button>
+
+      <div className="flex justify-between items-center mb-8 mt-16">
         <h1 className="text-3xl font-bold">Noticias del Mercado</h1>
         <div className="flex gap-4 items-center">
-            <button onClick={() => router.push('/dashboard')} className="p-3 bg-blue-600 rounded-lg hover:bg-blue-500">
-                Volver al Dashboard
-            </button>
             <input 
                 type="text"
                 placeholder="Buscar Ticker (ej: AAPL)..."
