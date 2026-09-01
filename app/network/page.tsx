@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Users } from 'lucide-react'
 
@@ -73,7 +74,7 @@ export default function NetworkPage() {
                 <h1 className="text-3xl font-bold mb-8 text-center">Red de Inversores</h1>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {users.map((user) => (
-                        <div key={user.id} className="bg-gray-800 p-6 rounded-xl border border-gray-700 flex flex-col gap-4">
+                        <Link href={`/profile/${user.id}`} key={user.id} className="bg-gray-800 p-6 rounded-xl border border-gray-700 flex flex-col gap-4 hover:border-gray-500 transition-colors">
                             <div className="flex items-center gap-3">
                                 {user.avatar_url ? (
                                     <img src={user.avatar_url} alt={user.username} className="w-12 h-12 rounded-full" />
@@ -86,7 +87,7 @@ export default function NetworkPage() {
                             </div>
                             <p className="text-sm text-gray-400 flex-1">{user.bio || 'Sin biografía'}</p>
                             <button 
-                                onClick={() => handleToggleFollow(user.id)}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleFollow(user.id); }}
                                 className={`px-4 py-2 rounded-lg font-bold transition-colors ${
                                     following.includes(user.id) 
                                         ? 'bg-transparent border border-gray-600 text-gray-300 hover:border-gray-400' 
@@ -95,7 +96,7 @@ export default function NetworkPage() {
                             >
                                 {following.includes(user.id) ? 'Siguiendo' : 'Seguir'}
                             </button>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </div>
