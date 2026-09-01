@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { getStockData, getHistoricalData, searchStocks } from './actions/finance'
 import { createClient } from '@/lib/supabase/client'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell } from 'lucide-react'
+import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell, Users } from 'lucide-react'
 import StockHeatmap from '@/components/StockHeatmap'
 import InvestmentCalculator from '@/components/InvestmentCalculator'
 
@@ -127,6 +127,7 @@ export default function DashboardPage() {
                     { icon: UserCheck, label: 'Ver Mi Portafolio', action: () => { router.push('/history'); setIsMenuOpen(false); } },
                     { icon: Settings, label: 'Mi Perfil', action: () => { router.push('/profile'); setIsMenuOpen(false); } },
                     { icon: MessageSquare, label: 'Comunidad', action: () => { router.push('/community'); setIsMenuOpen(false); } },
+                    { icon: Users, label: 'Descubrir Inversores', action: () => { router.push('/network'); setIsMenuOpen(false); } },
                   ].map((item, i) => (
                     <button 
                       key={i} 
