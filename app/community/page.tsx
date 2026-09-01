@@ -9,6 +9,8 @@ export default function CommunityPage() {
   const router = useRouter()
   const supabase = createClient()
   const [posts, setPosts] = useState<any[]>([])
+  const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({})
+  const [newComment, setNewComment] = useState<Record<string, string>>({})
   const [newPostContent, setNewPostContent] = useState('')
   const [newPostTicker, setNewPostTicker] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,11 +21,30 @@ export default function CommunityPage() {
       .select(`
         *, 
         profiles!posts_user_id_fkey(username, avatar_url),
-        likes(count)
+        likes(count),
+        comments(*, profiles!comments_user_id_fkey(username, avatar_url))
       `)
       .order('created_at', { ascending: false })
     
     if (data) setPosts(data)
+  }
+
+  async function handleAddComment(postId: string, commentText: string) {
+    if (!commentText.trim()) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        alert("Debes iniciar sesión para comentar.")
+        return
+    }
+
+    await supabase.from('comments').insert({
+        post_id: postId,
+        user_id: user.id,
+        content: commentText
+    })
+
+    setNewComment(prev => ({ ...prev, [postId]: '' }))
+    fetchPosts()
   }
 
   async function handleToggleLike(postId: string) {
@@ -154,10 +175,42 @@ export default function CommunityPage() {
                   <span>Me gusta</span> 
                   <span className="text-gray-500">({p.likes?.[0]?.count || 0})</span>
                 </button>
-                <button className="flex items-center gap-2 hover:text-blue-400 transition-colors">
+                <button 
+                    onClick={() => setExpandedComments(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
+                    className="flex items-center gap-2 hover:text-blue-400 transition-colors"
+                >
                   <MessageCircle size={18} /> <span>Comentar</span>
                 </button>
               </div>
+
+              {/* Sección de Comentarios */}
+              {expandedComments[p.id] && (
+                <div className="mt-4 space-y-4 pt-4 border-t border-gray-700">
+                    <div className="space-y-3">
+                        {p.comments?.map((c: any) => (
+                            <div key={c.id} className="flex gap-2 text-sm bg-gray-900 p-3 rounded">
+                                <span className="font-bold text-blue-300">{c.profiles?.username}:</span>
+                                <span>{c.content}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            className="flex-1 p-2 bg-gray-900 rounded border border-gray-600 text-sm"
+                            placeholder="Escribe un comentario..."
+                            value={newComment[p.id] || ''}
+                            onChange={(e) => setNewComment(prev => ({ ...prev, [p.id]: e.target.value }))}
+                        />
+                        <button 
+                            onClick={() => handleAddComment(p.id, newComment[p.id] || '')}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xs font-bold"
+                        >
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
