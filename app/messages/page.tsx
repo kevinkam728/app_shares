@@ -45,11 +45,12 @@ export default function MessagesPage() {
                 event: 'INSERT', 
                 schema: 'public', 
                 table: 'messages',
-                filter: `or(sender_id.eq.${selectedContact.id},receiver_id.eq.${selectedContact.id})`
             }, (payload) => {
                 const msg = payload.new
-                if ((msg.sender_id === selectedContact.id && msg.receiver_id === currentUser.id) || 
-                    (msg.sender_id === currentUser.id && msg.receiver_id === selectedContact.id)) {
+                // Solo añadir si pertenece a la conversación activa y no existe ya
+                if (((msg.sender_id === selectedContact.id && msg.receiver_id === currentUser.id) || 
+                    (msg.sender_id === currentUser.id && msg.receiver_id === selectedContact.id)) &&
+                    !messages.find(m => m.id === msg.id)) {
                     setMessages(prev => [...prev, msg])
                 }
             })
@@ -62,12 +63,19 @@ export default function MessagesPage() {
 
     const sendMessage = async () => {
         if (!newMessage.trim() || !selectedContact || !currentUser) return
-        await supabase.from('messages').insert({
+        
+        const messageToSend = {
             sender_id: currentUser.id,
             receiver_id: selectedContact.id,
             content: newMessage
-        })
-        setNewMessage('')
+        }
+        
+        const { data, error } = await supabase.from('messages').insert(messageToSend).select().single()
+        
+        if (!error && data) {
+            setMessages(prev => [...prev, data])
+            setNewMessage('')
+        }
     }
 
     return (
