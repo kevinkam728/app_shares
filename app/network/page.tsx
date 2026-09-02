@@ -60,6 +60,13 @@ export default function NetworkPage() {
                 .from('followers')
                 .insert({ follower_id: currentUser, following_id: targetUserId })
             setFollowing(prev => [...prev, targetUserId])
+            
+            // Notificación
+            await supabase.from('notifications').insert({
+                user_id: targetUserId,
+                actor_id: currentUser,
+                type: 'follow'
+            })
         }
     }
 
