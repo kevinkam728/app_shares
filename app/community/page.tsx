@@ -13,10 +13,11 @@ export default function CommunityPage() {
   const [newComment, setNewComment] = useState<Record<string, string>>({})
   const [newPostContent, setNewPostContent] = useState('')
   const [newPostTicker, setNewPostTicker] = useState('')
+  const [activeTab, setActiveTab] = useState<'global' | 'following'>('global')
   const [loading, setLoading] = useState(false)
 
   async function fetchPosts() {
-    const { data, error } = await supabase
+    let query = supabase
       .from('posts')
       .select(`
         *, 
@@ -25,6 +26,26 @@ export default function CommunityPage() {
         comments(*, profiles!comments_user_id_fkey(username, avatar_url))
       `)
       .order('created_at', { ascending: false })
+
+    if (activeTab === 'following') {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data: follows } = await supabase
+        .from('followers')
+        .select('following_id')
+        .eq('follower_id', user.id)
+
+      if (!follows || follows.length === 0) {
+        setPosts([])
+        return
+      }
+
+      const followingIds = follows.map(f => f.following_id)
+      query = query.in('user_id', followingIds)
+    }
+
+    const { data, error } = await query
     
     if (data) setPosts(data)
   }
@@ -75,7 +96,7 @@ export default function CommunityPage() {
 
   useEffect(() => {
     fetchPosts()
-  }, [])
+  }, [activeTab])
 
   const handlePost = async () => {
     if (!newPostContent.trim()) return
@@ -134,6 +155,22 @@ export default function CommunityPage() {
               {loading ? 'Publicando...' : 'Publicar'}
             </button>
           </div>
+        </div>
+
+        {/* Pestañas de Filtrado */}
+        <div className="flex gap-4 mb-6 border-b border-gray-700">
+          <button 
+            onClick={() => setActiveTab('global')}
+            className={`pb-2 px-1 ${activeTab === 'global' ? 'border-b-2 border-blue-500 text-white' : 'text-gray-500'}`}
+          >
+            Global
+          </button>
+          <button 
+            onClick={() => setActiveTab('following')}
+            className={`pb-2 px-1 ${activeTab === 'following' ? 'border-b-2 border-blue-500 text-white' : 'text-gray-500'}`}
+          >
+            Siguiendo
+          </button>
         </div>
 
         {/* Feed de Publicaciones */}
