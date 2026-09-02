@@ -46,13 +46,19 @@ export default function MessagesPage() {
                 schema: 'public', 
                 table: 'messages',
             }, (payload) => {
-                const msg = payload.new
-                // Solo añadir si pertenece a la conversación activa y no existe ya
-                if (((msg.sender_id === selectedContact.id && msg.receiver_id === currentUser.id) || 
-                    (msg.sender_id === currentUser.id && msg.receiver_id === selectedContact.id)) &&
-                    !messages.find(m => m.id === msg.id)) {
-                    setMessages(prev => [...prev, msg])
-                }
+                setMessages((prev) => {
+                    // Evitar duplicar el mensaje que ya insertó el emisor localmente
+                    if (prev.some(msg => msg.id === payload.new.id)) return prev;
+
+                    const isRelevant = 
+                      (payload.new.sender_id === currentUser.id && payload.new.receiver_id === selectedContact.id) ||
+                      (payload.new.sender_id === selectedContact.id && payload.new.receiver_id === currentUser.id);
+
+                    if (isRelevant) {
+                        return [...prev, payload.new];
+                    }
+                    return prev;
+                });
             })
             .subscribe()
 
@@ -64,17 +70,22 @@ export default function MessagesPage() {
     const sendMessage = async () => {
         if (!newMessage.trim() || !selectedContact || !currentUser) return
         
-        const messageToSend = {
-            sender_id: currentUser.id,
-            receiver_id: selectedContact.id,
-            content: newMessage
-        }
-        
-        const { data, error } = await supabase.from('messages').insert(messageToSend).select().single()
-        
-        if (!error && data) {
-            setMessages(prev => [...prev, data])
-            setNewMessage('')
+        const { data, error } = await supabase
+            .from('messages')
+            .insert([{ 
+                sender_id: currentUser.id, 
+                receiver_id: selectedContact.id, 
+                content: newMessage 
+            }])
+            .select();
+
+        if (data && data[0]) {
+            setMessages((prev) => {
+                // Evitar duplicados por si el Realtime es más rápido
+                if (prev.some(msg => msg.id === data[0].id)) return prev;
+                return [...prev, data[0]];
+            });
+            setNewMessage('');
         }
     }
 
