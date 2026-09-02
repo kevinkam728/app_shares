@@ -67,27 +67,46 @@ export default function MessagesPage() {
 
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-    const sendMessage = async () => {
-        if (!newMessage.trim() || !selectedContact || !currentUser) return
-        
+    const handleSendMessage = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!newMessage.trim() || !selectedContact || !currentUser) return;
+
+        // 1. Crear un mensaje temporal para la UI
+        const tempId = crypto.randomUUID();
+        const tempMsg = {
+            id: tempId,
+            sender_id: currentUser.id,
+            receiver_id: selectedContact.id,
+            content: newMessage,
+            created_at: new Date().toISOString()
+        };
+
+        // 2. Actualizar estado INMEDIATAMENTE (Optimistic)
+        setMessages((prev) => [...prev, tempMsg]);
+        const messageToSend = newMessage;
+        setNewMessage('');
+
+        // 3. Enviar a Supabase en segundo plano
         const { data, error } = await supabase
             .from('messages')
             .insert([{ 
                 sender_id: currentUser.id, 
                 receiver_id: selectedContact.id, 
-                content: newMessage 
+                content: messageToSend 
             }])
             .select();
 
-        if (data && data[0]) {
-            setMessages((prev) => {
-                // Evitar duplicados por si el Realtime es más rápido
-                if (prev.some(msg => msg.id === data[0].id)) return prev;
-                return [...prev, data[0]];
-            });
-            setNewMessage('');
+        if (error) {
+            console.error("Error al enviar mensaje:", error);
+            // Revertir: eliminar el mensaje temporal si falla
+            setMessages((prev) => prev.filter(msg => msg.id !== tempId));
+        } else if (data && data[0]) {
+            // 4. Reemplazar el mensaje temporal con el real de la DB
+            setMessages((prev) => 
+                prev.map(msg => msg.id === tempId ? data[0] : msg)
+            );
         }
-    }
+    };
 
     return (
         <div className="flex h-screen bg-gray-900 text-white">
@@ -114,8 +133,8 @@ export default function MessagesPage() {
                             <div ref={messagesEndRef} />
                         </div>
                         <div className="p-4 border-t border-gray-700 flex gap-2">
-                            <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} className="flex-1 bg-gray-800 p-2 rounded" placeholder="Escribe..." />
-                            <button onClick={sendMessage} className="bg-blue-600 p-2 rounded"><Send size={20} /></button>
+                            <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} className="flex-1 bg-gray-800 p-2 rounded" placeholder="Escribe..." />
+                            <button onClick={() => handleSendMessage()} className="bg-blue-600 p-2 rounded"><Send size={20} /></button>
                         </div>
                     </>
                 ) : (
