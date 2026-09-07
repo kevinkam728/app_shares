@@ -25,7 +25,6 @@ export default function DashboardPage() {
   const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
-  const [unreadNotifications, setUnreadNotifications] = useState(0)
   const supabase = createClient()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -71,14 +70,6 @@ export default function DashboardPage() {
         const nameToUse = data.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario'
         setUserName(nameToUse.charAt(0).toUpperCase() + nameToUse.slice(1))
       }
-
-      // Obtener notificaciones sin leer
-      const { count } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('read', false)
-      setUnreadNotifications(count || 0)
 
       setPageLoading(false)
     }
@@ -132,21 +123,6 @@ export default function DashboardPage() {
                 <div className="absolute left-0 mt-2 w-72 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 py-1">
                   {[
                     { icon: MessageSquare, label: 'Chatbot Financiero', action: () => { router.push('/chatbot'); setIsMenuOpen(false); } },
-                    { icon: MessageSquare, label: 'Mensajes', action: () => { router.push('/messages'); setIsMenuOpen(false); } },
-                    { 
-                        icon: () => (
-                            <div className="relative">
-                                <Bell size={18} />
-                                {unreadNotifications > 0 && (
-                                    <span className="absolute -top-1 -right-1 bg-red-600 text-[10px] text-white rounded-full w-4 h-4 flex items-center justify-center">
-                                        {unreadNotifications}
-                                    </span>
-                                )}
-                            </div>
-                        ), 
-                        label: 'Notificaciones', 
-                        action: () => { router.push('/notifications'); setIsMenuOpen(false); } 
-                    },
                     { icon: Newspaper, label: 'Noticias del Mercado', action: () => { router.push('/news'); setIsMenuOpen(false); } },
                     { icon: Calendar, label: 'Calendario de Ganancias', action: () => { router.push('/calendar'); setIsMenuOpen(false); } },
                     { icon: Calculator, label: 'Calculadora Financiera', action: () => { setIsCalculatorOpen(true); setIsMenuOpen(false); } },
