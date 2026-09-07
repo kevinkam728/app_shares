@@ -21,6 +21,13 @@ export default function MessagesPage() {
             if (!user) { router.push('/login'); return }
             setCurrentUser(user)
 
+            // Marcar todos los mensajes entrantes no leídos como leídos al entrar
+            await supabase
+                .from('messages')
+                .update({ read: true })
+                .eq('receiver_id', user.id)
+                .eq('read', false);
+
             const { data: profiles } = await supabase.from('profiles').select('*').neq('id', user.id)
             if (profiles) setContacts(profiles)
         }
