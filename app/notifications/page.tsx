@@ -47,7 +47,10 @@ export default function NotificationsPage() {
                         <div key={n.id} className={`p-4 rounded-lg flex items-center gap-4 ${n.read ? 'bg-gray-800' : 'bg-slate-800'}`}>
                             {n.actor?.avatar_url ? <img src={n.actor.avatar_url} className="w-10 h-10 rounded-full" /> : <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">{n.actor?.username?.[0]}</div>}
                             <p className="text-sm">
-                                <span className="font-bold">{n.actor?.username}</span> {n.type === 'like' ? 'le dio me gusta a tu publicación' : n.type === 'comment' ? 'comentó tu publicación' : 'comenzó a seguirte'}
+                                {n.type === 'message' 
+                                    ? <>tienes un mensaje nuevo de <strong>{n.actor?.username}</strong></>
+                                    : <><span className="font-bold">{n.actor?.username}</span> {n.type === 'like' ? 'le dio me gusta a tu publicación' : n.type === 'comment' ? 'comentó tu publicación' : 'comenzó a seguirte'}</>
+                                }
                             </p>
                         </div>
                     ))}

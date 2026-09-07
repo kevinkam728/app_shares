@@ -7,6 +7,8 @@ import { getStockData, getHistoricalData, searchStocks } from './actions/finance
 import { createClient } from '@/lib/supabase/client'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell, Users } from 'lucide-react'
+import NotificationBell from '@/components/NotificationBell'
+import MessageIcon from '@/components/MessageIcon'
 import StockHeatmap from '@/components/StockHeatmap'
 import InvestmentCalculator from '@/components/InvestmentCalculator'
 
@@ -148,10 +150,8 @@ export default function DashboardPage() {
                     { icon: Newspaper, label: 'Noticias del Mercado', action: () => { router.push('/news'); setIsMenuOpen(false); } },
                     { icon: Calendar, label: 'Calendario de Ganancias', action: () => { router.push('/calendar'); setIsMenuOpen(false); } },
                     { icon: Calculator, label: 'Calculadora Financiera', action: () => { setIsCalculatorOpen(true); setIsMenuOpen(false); } },
-                    { icon: Bell, label: 'Mis Alertas de Precios', action: () => {} },
                     { icon: UserCheck, label: 'Ver Mi Portafolio', action: () => { router.push('/history'); setIsMenuOpen(false); } },
                     { icon: Settings, label: 'Mi Perfil', action: () => { router.push('/profile'); setIsMenuOpen(false); } },
-                    { icon: MessageSquare, label: 'Comunidad', action: () => { router.push('/community'); setIsMenuOpen(false); } },
                     { icon: Users, label: 'Descubrir Inversores', action: () => { router.push('/network'); setIsMenuOpen(false); } },
                   ].map((item, i) => (
                     <button 
@@ -174,6 +174,8 @@ export default function DashboardPage() {
             <div className="w-24 h-10 animate-pulse bg-gray-700 rounded-md"></div>
           ) : userProfile ? (
             <>
+              <NotificationBell />
+              <MessageIcon />
               {userProfile?.role === 'advisor' && (
                 <div className="flex items-center gap-2 bg-green-900/30 text-green-400 px-4 py-2 rounded-full text-sm font-semibold border border-green-700">
                   <UserCheck size={16} />

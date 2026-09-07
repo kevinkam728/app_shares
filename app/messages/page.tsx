@@ -105,8 +105,28 @@ export default function MessagesPage() {
             setMessages((prev) => 
                 prev.map(msg => msg.id === tempId ? data[0] : msg)
             );
+            
+            // 5. Crear notificación
+            await supabase.from('notifications').insert([{ 
+                type: 'message', 
+                user_id: selectedContact.id, 
+                actor_id: currentUser.id 
+            }]);
         }
     };
+
+    useEffect(() => {
+        if (!selectedContact || !currentUser) return
+
+        const markAsRead = async () => {
+            await supabase.from('messages')
+                .update({ read: true })
+                .eq('receiver_id', currentUser.id)
+                .eq('sender_id', selectedContact.id)
+                .eq('read', false);
+        }
+        markAsRead();
+    }, [messages, selectedContact, currentUser, supabase]);
 
     return (
         <div className="flex h-screen bg-gray-900 text-white">
