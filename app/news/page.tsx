@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Search } from 'lucide-react'
 
 export default function NewsPage() {
   const router = useRouter()
@@ -9,7 +10,6 @@ export default function NewsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [ticker, setTicker] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [searchTrigger, setSearchTrigger] = useState(0)
 
@@ -21,10 +21,6 @@ export default function NewsPage() {
         const token = process.env.NEXT_PUBLIC_FINNHUB_API_KEY
         let url = `https://finnhub.io/api/v1/news?category=general&token=${token}`
         
-        if (ticker.trim()) {
-            url = `https://finnhub.io/api/v1/company-news?symbol=${ticker.toUpperCase()}&from=${selectedDate}&to=${selectedDate}&token=${token}`
-        }
-
         const response = await fetch(url)
         if (!response.ok) throw new Error('Error al cargar noticias')
         
@@ -40,9 +36,7 @@ export default function NewsPage() {
     fetchNews()
   }, [searchTrigger])
 
-  const baseFilteredNews = ticker.trim() 
-    ? news 
-    : news.filter(article => {
+  const baseFilteredNews = news.filter(article => {
         const articleDate = new Date(article.datetime * 1000).toLocaleDateString('en-CA')
         return articleDate === selectedDate
     })
@@ -65,28 +59,24 @@ export default function NewsPage() {
 
       <div className="flex justify-between items-center mb-8 mt-16">
         <h1 className="text-3xl font-bold">Noticias del Mercado</h1>
-        <div className="flex gap-4 items-center">
-            <input 
-                type="text"
-                placeholder="Buscar Ticker (ej: AAPL)..."
-                className="p-2 bg-gray-800 rounded border border-gray-700"
-                value={ticker}
-                onChange={e => setTicker(e.target.value)}
-            />
-            <input 
-                type="text"
-                placeholder="Filtrar por texto..."
-                className="p-2 bg-gray-800 rounded border border-gray-700"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-            />
+        <div className="flex items-center gap-4">
+            <div className="relative flex-grow">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input 
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar palabras clave en las noticias..."
+                    className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 transition-all"
+                />
+            </div>
             <input 
                 type="date" 
                 className="p-2 bg-gray-800 rounded border border-gray-700"
                 value={selectedDate} 
                 onChange={e => setSelectedDate(e.target.value)} 
             />
-            <button onClick={() => setSearchTrigger(prev => prev + 1)} className="p-2 bg-green-600 rounded hover:bg-green-500">
+            <button onClick={() => setSearchTrigger(prev => prev + 1)} className="p-2 bg-green-600 rounded hover:bg-green-500 whitespace-nowrap">
                 Buscar Noticias
             </button>
         </div>
