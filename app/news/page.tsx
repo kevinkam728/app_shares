@@ -10,6 +10,7 @@ export default function NewsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [ticker, setTicker] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [searchTrigger, setSearchTrigger] = useState(0)
 
   useEffect(() => {
@@ -39,12 +40,19 @@ export default function NewsPage() {
     fetchNews()
   }, [searchTrigger])
 
-  const filteredNews = ticker.trim() 
+  const baseFilteredNews = ticker.trim() 
     ? news 
     : news.filter(article => {
         const articleDate = new Date(article.datetime * 1000).toLocaleDateString('en-CA')
         return articleDate === selectedDate
     })
+
+  const filteredNews = baseFilteredNews.filter(article => {
+    const term = searchTerm.toLowerCase();
+    const headline = (article.headline || '').toLowerCase();
+    const summary = (article.summary || '').toLowerCase();
+    return headline.includes(term) || summary.includes(term);
+  });
 
   if (loading) return <div className="min-h-screen bg-gray-900 text-white p-8">Cargando noticias...</div>
   if (error) return <div className="min-h-screen bg-gray-900 text-white p-8">{error}</div>
@@ -64,6 +72,13 @@ export default function NewsPage() {
                 className="p-2 bg-gray-800 rounded border border-gray-700"
                 value={ticker}
                 onChange={e => setTicker(e.target.value)}
+            />
+            <input 
+                type="text"
+                placeholder="Filtrar por texto..."
+                className="p-2 bg-gray-800 rounded border border-gray-700"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
             />
             <input 
                 type="date" 
@@ -100,7 +115,7 @@ export default function NewsPage() {
             </a>
           ))
         ) : (
-          <p className="text-gray-400">No hay noticias disponibles para esta fecha.</p>
+          <p className="text-gray-400">No se encontraron noticias con ese término.</p>
         )}
       </div>
     </div>
