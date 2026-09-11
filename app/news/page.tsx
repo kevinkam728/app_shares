@@ -87,7 +87,11 @@ export default function NewsPage() {
               rel="noopener noreferrer" 
               className="flex gap-4 p-4 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
             >
-              <img src={article.image} alt={article.headline} className="w-24 h-24 object-cover rounded" />
+              {article.image ? (
+                <img src={article.image} alt={article.headline} className="w-24 h-24 object-cover rounded" />
+              ) : (
+                <div className="w-24 h-24 bg-gray-700 flex items-center justify-center text-gray-500 text-xs text-center rounded">Sin imagen</div>
+              )}
               <div>
                 <h3 className="font-semibold text-lg line-clamp-2">{article.headline}</h3>
                 <p className="text-sm text-gray-400 mt-1">{article.source} • {new Date(article.datetime * 1000).toLocaleDateString()}</p>

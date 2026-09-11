@@ -129,15 +129,18 @@ export default function DashboardPage() {
                     { icon: UserCheck, label: 'Ver Mi Portafolio', action: () => { router.push('/history'); setIsMenuOpen(false); } },
                     { icon: Settings, label: 'Mi Perfil', action: () => { router.push('/profile'); setIsMenuOpen(false); } },
                     { icon: Users, label: 'Descubrir Inversores', action: () => { router.push('/network'); setIsMenuOpen(false); } },
-                  ].map((item, i) => (
+                   ].map((item, i) => {
+                     const IconComponent = item.icon;
+                     return (
                     <button 
                       key={i} 
                       onClick={item.action}
                       className="flex w-full items-center gap-3 px-4 py-3 text-sm hover:bg-gray-700 transition-colors whitespace-nowrap"
                     >
-                      {typeof item.icon === 'function' ? <item.icon /> : <item.icon size={18} />} {item.label}
+                      <IconComponent size={18} /> {item.label}
                     </button>
-                  ))}
+                     );
+                   })}
                 </div>
               )}
             </div>

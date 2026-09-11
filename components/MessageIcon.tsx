@@ -10,22 +10,29 @@ export default function MessageIcon() {
     const [currentUser, setCurrentUser] = useState<any>(null)
     const supabase = createClient()
 
-    useEffect(() => {
-        const init = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
-            setCurrentUser(user)
+    const fetchUnreadCount = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        setCurrentUser(user)
 
-            const { count } = await supabase
-                .from('messages')
-                .select('*', { count: 'exact', head: true })
-                .eq('receiver_id', user.id)
-                .eq('read', false)
-            
-            setUnreadCount(count || 0)
-        }
-        init()
+        const { count } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('receiver_id', user.id)
+            .eq('read', false)
+        
+        setUnreadCount(count || 0)
+    }
+
+    useEffect(() => {
+        fetchUnreadCount()
     }, [supabase])
+
+    useEffect(() => {
+        const handleReadEvent = () => fetchUnreadCount(); // Vuelve a contar en la base de datos
+        window.addEventListener('messages-read', handleReadEvent);
+        return () => window.removeEventListener('messages-read', handleReadEvent);
+    }, []);
 
     useEffect(() => {
         if (!currentUser) return

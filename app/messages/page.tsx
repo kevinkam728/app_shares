@@ -13,7 +13,24 @@ export default function MessagesPage() {
     const [selectedContact, setSelectedContact] = useState<any>(null)
     const [messages, setMessages] = useState<any[]>([])
     const [newMessage, setNewMessage] = useState('')
+    const [unreadPerContact, setUnreadPerContact] = useState<Record<string, number>>({})
     const messagesEndRef = useRef<HTMLDivElement>(null)
+
+    const fetchUnreadCounts = async (userId: string) => {
+        const { data } = await supabase
+            .from('messages')
+            .select('sender_id')
+            .eq('receiver_id', userId)
+            .eq('read', false)
+
+        if (data) {
+            const counts: Record<string, number> = {}
+            data.forEach((msg: any) => {
+                counts[msg.sender_id] = (counts[msg.sender_id] || 0) + 1
+            })
+            setUnreadPerContact(counts)
+        }
+    }
 
     useEffect(() => {
         const fetchUserAndContacts = async () => {
@@ -21,18 +38,29 @@ export default function MessagesPage() {
             if (!user) { router.push('/login'); return }
             setCurrentUser(user)
 
-            // Marcar todos los mensajes entrantes no leídos como leídos al entrar
-            await supabase
-                .from('messages')
-                .update({ read: true })
-                .eq('receiver_id', user.id)
-                .eq('read', false);
+            await fetchUnreadCounts(user.id)
 
             const { data: profiles } = await supabase.from('profiles').select('*').neq('id', user.id)
             if (profiles) setContacts(profiles)
         }
         fetchUserAndContacts()
     }, [])
+
+    const handleSelectContact = async (contact: any) => {
+        setSelectedContact(contact)
+        if (!currentUser) return
+
+        const contactId = contact.id
+        await supabase
+            .from('messages')
+            .update({ read: true })
+            .eq('receiver_id', currentUser.id)
+            .eq('sender_id', contactId)
+            .eq('read', false)
+
+        setUnreadPerContact(prev => ({ ...prev, [contactId]: 0 }))
+        window.dispatchEvent(new CustomEvent('messages-read'))
+    }
 
     useEffect(() => {
         if (!selectedContact || !currentUser) return
@@ -53,13 +81,23 @@ export default function MessagesPage() {
                 schema: 'public', 
                 table: 'messages',
             }, (payload) => {
+                if (payload.new.receiver_id === currentUser.id) {
+                    if (!selectedContact || payload.new.sender_id !== selectedContact.id) {
+                        setUnreadPerContact((prev) => ({
+                            ...prev,
+                            [payload.new.sender_id]: (prev[payload.new.sender_id] || 0) + 1
+                        }))
+                    }
+                }
+
                 setMessages((prev) => {
                     // Evitar duplicar el mensaje que ya insertó el emisor localmente
                     if (prev.some(msg => msg.id === payload.new.id)) return prev;
 
-                    const isRelevant = 
+                    const isRelevant = selectedContact && (
                       (payload.new.sender_id === currentUser.id && payload.new.receiver_id === selectedContact.id) ||
-                      (payload.new.sender_id === selectedContact.id && payload.new.receiver_id === currentUser.id);
+                      (payload.new.sender_id === selectedContact.id && payload.new.receiver_id === currentUser.id)
+                    );
 
                     if (isRelevant) {
                         return [...prev, payload.new];
@@ -122,28 +160,22 @@ export default function MessagesPage() {
         }
     };
 
-    useEffect(() => {
-        if (!selectedContact || !currentUser) return
-
-        const markAsRead = async () => {
-            await supabase.from('messages')
-                .update({ read: true })
-                .eq('receiver_id', currentUser.id)
-                .eq('sender_id', selectedContact.id)
-                .eq('read', false);
-        }
-        markAsRead();
-    }, [messages, selectedContact, currentUser, supabase]);
-
     return (
         <div className="flex h-screen bg-gray-900 text-white">
             <button onClick={() => router.push('/')} className="fixed top-6 left-6 z-50 bg-gray-800 hover:bg-gray-700 p-2 rounded-full">Volver</button>
             <div className="w-1/3 border-r border-gray-700 p-4">
                 <h2 className="text-xl font-bold mb-4">Contactos</h2>
                 {contacts.map(contact => (
-                    <button key={contact.id} onClick={() => setSelectedContact(contact)} className={`w-full p-3 rounded flex items-center gap-3 hover:bg-gray-800 ${selectedContact?.id === contact.id ? 'bg-gray-800' : ''}`}>
-                        <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">{contact.username?.[0]}</div>
-                        {contact.username}
+                    <button key={contact.id} onClick={() => handleSelectContact(contact)} className={`w-full p-3 rounded flex items-center justify-between hover:bg-gray-800 ${selectedContact?.id === contact.id ? 'bg-gray-800' : ''}`}>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">{contact.username?.[0]}</div>
+                            {contact.username}
+                        </div>
+                        {unreadPerContact[contact.id] > 0 && (
+                            <span className="bg-blue-600 text-xs text-white rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                                {unreadPerContact[contact.id]}
+                            </span>
+                        )}
                     </button>
                 ))}
             </div>
