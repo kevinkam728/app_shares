@@ -3,11 +3,26 @@
 import YahooFinance from 'yahoo-finance2';
 const yahooFinance = new YahooFinance();
 
-export async function getStockData(ticker: string) {
+export async function getStockData(ticker: string): Promise<any> {
   if (!ticker) return null;
   try {
-    const quote = await yahooFinance.quote(ticker);
-    return quote;
+    const [quote, summary] = await Promise.all([
+      yahooFinance.quote(ticker),
+      yahooFinance.quoteSummary(ticker, { modules: ['summaryDetail', 'defaultKeyStatistics'] }).catch(() => null)
+    ]);
+
+    const summaryDetail = (summary as any)?.summaryDetail || {};
+    const defaultKeyStatistics = (summary as any)?.defaultKeyStatistics || {};
+
+    return {
+      ...(quote as any),
+      marketCap: (quote as any).marketCap || summaryDetail.marketCap,
+      peRatio: (quote as any).trailingPE || summaryDetail.trailingPE || defaultKeyStatistics.forwardPE || defaultKeyStatistics.trailingPE,
+      ebitda: defaultKeyStatistics.ebitda || summaryDetail.ebitda,
+      eps: (quote as any).epsTrailingTwelveMonths || defaultKeyStatistics.trailingEps,
+      yearHigh: (quote as any).fiftyTwoWeekHigh || summaryDetail.fiftyTwoWeekHigh,
+      yearLow: (quote as any).fiftyTwoWeekLow || summaryDetail.fiftyTwoWeekLow,
+    };
   } catch (error) {
     console.error("Error fetching stock:", error);
     return null;

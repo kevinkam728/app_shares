@@ -15,13 +15,16 @@ interface StockStatsProps {
 }
 
 export default function StockStats({ stats }: StockStatsProps) {
-  const formatValue = (val: any, isCurrency = false) => {
-    if (val === undefined || val === null || val === 'N/A') return 'N/A';
+  const formatValue = (val: any, isCurrency = false, isRatio = false) => {
+    if (val === undefined || val === null || val === 'N/A' || isNaN(val)) return 'N/A';
     if (typeof val === 'number') {
-      if (isCurrency || val > 1000000) {
+      if (isCurrency || Math.abs(val) > 10000000) {
         if (val >= 1e12) return `$${(val / 1e12).toFixed(2)}T`;
         if (val >= 1e9) return `$${(val / 1e9).toFixed(2)}B`;
         if (val >= 1e6) return `$${(val / 1e6).toFixed(2)}M`;
+      }
+      if (isRatio || Math.abs(val) < 1000) {
+        return val.toFixed(2);
       }
       return val.toLocaleString();
     }
@@ -30,11 +33,11 @@ export default function StockStats({ stats }: StockStatsProps) {
 
   const statItems = [
     { label: 'Market Cap', value: formatValue(stats?.marketCap, true) },
-    { label: 'P/E Ratio', value: formatValue(stats?.peRatio) },
+    { label: 'P/E Ratio', value: formatValue(stats?.peRatio, false, true) },
     { label: 'EBITDA', value: formatValue(stats?.ebitda, true) },
-    { label: 'EPS', value: formatValue(stats?.eps) },
-    { label: '52W High', value: formatValue(stats?.yearHigh) },
-    { label: '52W Low', value: formatValue(stats?.yearLow) },
+    { label: 'EPS', value: formatValue(stats?.eps, false, true) },
+    { label: '52W High', value: formatValue(stats?.yearHigh, false, true) },
+    { label: '52W Low', value: formatValue(stats?.yearLow, false, true) },
   ];
 
   return (
