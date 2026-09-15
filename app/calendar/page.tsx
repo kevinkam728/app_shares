@@ -63,17 +63,18 @@ export default function EarningsCalendarPage() {
         <h1 className="text-3xl font-bold">Calendario de Ganancias (Earnings)</h1>
       </div>
       
-      <div className="flex gap-2 justify-center mb-12 relative w-full max-w-lg mx-auto">
+      <div className="flex gap-2 justify-center mb-12 w-full mx-auto max-w-sm">
         <div className="relative w-full">
             <input 
                 type="text" 
                 placeholder="Ingresa un Ticker, ej: AAPL" 
-                className="p-3 bg-gray-800 rounded-lg border border-gray-700 w-full"
+                className="p-3 bg-gray-800 rounded-lg border border-gray-700 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={ticker}
+                onFocus={() => setShowDropdown(true)}
                 onChange={e => setTicker(e.target.value.toUpperCase())}
             />
             {showDropdown && suggestions.length > 0 && (
-                <ul className="absolute w-full bg-gray-800 border border-gray-700 rounded-md mt-1 max-h-48 overflow-y-auto z-[100]">
+                <ul className="absolute z-[100] w-full bg-slate-800 border border-slate-700 rounded-lg mt-1 max-h-60 overflow-y-auto shadow-2xl">
                   {suggestions.map((s, index) => (
                     <li 
                       key={`${s.symbol}-${index}`} 
@@ -82,7 +83,7 @@ export default function EarningsCalendarPage() {
                         setShowDropdown(false);
                         fetchEarnings(s.symbol);
                       }} 
-                      className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                      className="px-4 py-3 hover:bg-slate-700 cursor-pointer text-white border-b border-slate-700/50 last:border-0 transition-colors"
                     >
                       <span className="font-bold">{s.symbol}</span> - <span className="text-gray-400 text-sm">{s.name}</span>
                     </li>

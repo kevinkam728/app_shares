@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link';
 import { getStockData, getHistoricalData, searchStocks } from './actions/finance'
 import { createClient } from '@/lib/supabase/client'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell, Users } from 'lucide-react'
 import NotificationBell from '@/components/NotificationBell'
 import MessageIcon from '@/components/MessageIcon'
 import StockHeatmap from '@/components/StockHeatmap'
 import InvestmentCalculator from '@/components/InvestmentCalculator'
+import TradingViewWidget from '@/components/TradingViewWidget'
+import StockStats from '@/components/StockStats'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -214,7 +215,7 @@ export default function DashboardPage() {
       </div>
 
         {stock && (
-        <div className="bg-gray-800 p-8 rounded-xl shadow-xl">
+        <div className="bg-gray-800 p-8 rounded-xl shadow-xl mt-8">
           <div className="flex justify-between items-start mb-6">
             <div>
               <h2 className="text-3xl font-bold">{stock.symbol}</h2>
@@ -228,19 +229,11 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="h-80 mt-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={history}>
-                <XAxis dataKey="date" hide />
-                <YAxis domain={['auto', 'auto']} hide />
-                <Tooltip 
-                  contentStyle={{backgroundColor: '#1f2937', border: 'none', borderRadius: '8px'}}
-                  itemStyle={{color: '#60a5fa'}}
-                />
-                <Line type="monotone" dataKey="close" stroke="#3b82f6" strokeWidth={3} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="h-[400px] mt-6">
+            <TradingViewWidget symbol={stock.symbol} />
           </div>
+
+          <StockStats stats={stock} />
         </div>
       )}
 
