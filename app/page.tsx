@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link';
 import { getStockData, getHistoricalData, searchStocks } from './actions/finance'
 import { createClient } from '@/lib/supabase/client'
-import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell, Users } from 'lucide-react'
+import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell, Users, PlusCircle } from 'lucide-react'
 import NotificationBell from '@/components/NotificationBell'
 import MessageIcon from '@/components/MessageIcon'
 import StockHeatmap from '@/components/StockHeatmap'
@@ -128,6 +128,7 @@ export default function DashboardPage() {
                     { icon: Calendar, label: 'Calendario de Ganancias', action: () => { router.push('/calendar'); setIsMenuOpen(false); } },
                     { icon: Calculator, label: 'Calculadora Financiera', action: () => { setIsCalculatorOpen(true); setIsMenuOpen(false); } },
                     { icon: UserCheck, label: 'Ver Mi Portafolio', action: () => { router.push('/history'); setIsMenuOpen(false); } },
+                    { icon: PlusCircle, label: 'Añadir al Portafolio', action: () => { router.push('/add-stock'); setIsMenuOpen(false); } },
                     { icon: Settings, label: 'Mi Perfil', action: () => { router.push('/profile'); setIsMenuOpen(false); } },
                     { icon: Users, label: 'Descubrir Inversores', action: () => { router.push('/network'); setIsMenuOpen(false); } },
                    ].map((item, i) => {

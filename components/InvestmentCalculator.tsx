@@ -1,42 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { searchStocks } from '@/app/actions/finance'
+import { useState } from 'react'
 
 export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: boolean; onClose: () => void; }) {
-  const router = useRouter()
-  const [mode, setMode] = useState<'compound' | 'trade' | 'dca'>('compound')
+  const [mode, setMode] = useState<'compound' | 'trade'>('compound')
   
   const [compound, setCompound] = useState({ initial: '', monthly: '', rate: '', years: '' })
   const [trade, setTrade] = useState({ buy: '', sell: '', quantity: '', years: '' })
-  const [purchases, setPurchases] = useState<{price: number, quantity: number}[]>([])
-  const [currentPrice, setCurrentPrice] = useState('')
-  const [currentQty, setCurrentQty] = useState('')
-  const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
-  const [ticker, setTicker] = useState('')
-  const [suggestions, setSuggestions] = useState<{symbol: string, name: string}[]>([])
-  const [showDropdown, setShowDropdown] = useState(false)
-
-  // Debounce buscador de ticker para DCA
-  useEffect(() => {
-    if (mode === 'dca' && ticker.length > 1) {
-        const timer = setTimeout(async () => {
-          try {
-            const results = await searchStocks(ticker)
-            setSuggestions(results)
-            setShowDropdown(true)
-          } catch (error) {
-            console.error("Error searching stocks:", error)
-            setSuggestions([])
-          }
-        }, 300)
-      return () => clearTimeout(timer)
-    } else {
-      setSuggestions([])
-      setShowDropdown(false)
-    }
-  }, [ticker, mode])
 
   if (!isOpen) return null
 
@@ -73,37 +43,8 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
     return { pnl, pct, annualized }
   }
 
-  const calcDCA = () => {
-    const totalCost = purchases.reduce((acc, p) => acc + (p.price * p.quantity), 0)
-    const totalQuantity = purchases.reduce((acc, p) => acc + p.quantity, 0)
-    const avgPrice = totalQuantity > 0 ? totalCost / totalQuantity : 0
-    return { avgPrice, totalQuantity, isValid: purchases.length > 0 }
-  }
-
-  const handleAddPurchase = () => {
-    const price = Number(currentPrice)
-    const qty = Number(currentQty)
-    if (price > 0 && qty > 0) {
-      setPurchases([...purchases, { price, quantity: qty }])
-      
-      // Persistencia inmediata
-      const portfolio = JSON.parse(localStorage.getItem('global_portfolio') || '{}')
-      if (!portfolio[ticker]) portfolio[ticker] = []
-      portfolio[ticker].push({ date: currentDate, price, quantity: qty })
-      localStorage.setItem('global_portfolio', JSON.stringify(portfolio))
-      
-      setCurrentPrice('')
-      setCurrentQty('')
-    }
-  }
-
   const compoundResult = calcCompound()
   const tradeResult = calcTrade()
-  const dcaResult = calcDCA()
-
-  const handleVerPortfolio = () => {
-    router.push('/history')
-  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
@@ -114,7 +55,6 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
         <select className="w-full p-2 mb-4 bg-gray-700 rounded" value={mode} onChange={(e) => setMode(e.target.value as any)}>
           <option value="compound">Interés Compuesto</option>
           <option value="trade">Calculadora de Trade</option>
-          <option value="dca">Precio Promedio (DCA)</option>
         </select>
 
         {mode === 'compound' ? (
@@ -140,7 +80,7 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
               Ganancia Total: <span className="font-bold text-blue-400">${compoundResult.gain.toFixed(2)}</span>
             </div>
           </div>
-        ) : mode === 'trade' ? (
+        ) : (
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1">Precio de Compra ($)</label>
@@ -167,36 +107,6 @@ export default function InvestmentCalculator({ isOpen, onClose }: { isOpen: bool
                 </>
               )}
             </div>
-          </div>
-        ) : (
-          <div className="space-y-4 relative">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Ticker</label>
-              <input type="text" placeholder="ej: AAPL" className="w-full p-2 bg-gray-700 rounded" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase())} />
-              {showDropdown && suggestions.length > 0 && (
-                <ul className="absolute w-full bg-gray-800 border border-gray-700 rounded-md mt-1 max-h-48 overflow-y-auto z-50">
-                  {suggestions.map((s, index) => (
-                    <li key={`${s.symbol}-${index}`} onClick={() => { setTicker(s.symbol); setShowDropdown(false); }} className="px-4 py-2 hover:bg-gray-700 cursor-pointer">
-                      <span className="font-bold">{s.symbol}</span> - <span className="text-gray-400 text-sm">{s.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="grid grid-cols-3 gap-3 w-full">
-              <input type="date" className="w-full p-2 bg-gray-700 rounded" value={currentDate} onChange={e => setCurrentDate(e.target.value)} />
-              <input type="number" placeholder="Precio $" className="w-full p-2 bg-gray-700 rounded" value={currentPrice} onChange={e => setCurrentPrice(e.target.value)} />
-              <input type="number" placeholder="Cant." className="w-full p-2 bg-gray-700 rounded" value={currentQty} onChange={e => setCurrentQty(e.target.value)} />
-            </div>
-            <button onClick={handleAddPurchase} disabled={!ticker || !currentPrice || !currentQty} className="w-full p-2 bg-blue-600 rounded disabled:bg-gray-600"> + Añadir compra</button>
-            <p className="text-sm text-gray-400">Compras añadidas: {purchases.length}</p>
-            <div className="text-lg mt-6 text-center bg-gray-900 p-4 rounded-lg">
-              Precio Promedio: <span className="font-bold text-blue-400">${dcaResult.avgPrice.toFixed(2)}</span><br/>
-              Total de Acciones: <span className="font-bold text-green-400">{dcaResult.totalQuantity}</span>
-            </div>
-            <button onClick={handleVerPortfolio} className="w-full p-2 bg-green-600 rounded">
-              Ver Mi Portafolio Completo
-            </button>
           </div>
         )}
       </div>
