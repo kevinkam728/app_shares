@@ -60,32 +60,10 @@ export default function AddStockPage() {
         return
       }
 
-      const currentUser = user
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('balance')
-        .eq('id', currentUser.id)
-        .single();
-        
-      if (profileError || !profile) {
-        setErrorMsg('No se pudo obtener tu saldo actual.');
-        setLoading(false);
-        return;
-      }
-
-      const totalCost = priceNum * qtyNum
-
-      if (profile.balance < totalCost) {
-        setErrorMsg('Fondos insuficientes en el portafolio para realizar esta compra.');
-        setLoading(false);
-        return;
-      }
-
-      // 1. Get or create portfolio
-      let { data: port } = await supabase.from('portfolios').select('*').eq('user_id', currentUser.id).single()
+      // Get or create portfolio
+      let { data: port } = await supabase.from('portfolios').select('*').eq('user_id', user.id).single()
       if (!port) {
-        const { data: newPort } = await supabase.from('portfolios').insert({ user_id: currentUser.id, balance_usd: 10000 }).select().single()
+        const { data: newPort } = await supabase.from('portfolios').insert({ user_id: user.id }).select().single()
         port = newPort
       }
 
@@ -95,7 +73,9 @@ export default function AddStockPage() {
         return
       }
 
-      // 2. Insert simulated trade
+      const totalCost = priceNum * qtyNum
+
+      // Insert trade
       const { error: tradeError } = await supabase.from('simulated_trades').insert({
         portfolio_id: port.id,
         ticker: ticker.toUpperCase(),
@@ -108,17 +88,7 @@ export default function AddStockPage() {
         throw tradeError
       }
 
-      // 3. Update profile balance
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ balance: profile.balance - totalCost })
-        .eq('id', currentUser.id)
-
-      if (updateError) {
-        throw updateError
-      }
-
-      setSuccessMessage('¡Compra registrada con éxito en tu portafolio!')
+      setSuccessMessage('Compra registrada correctamente en el portafolio')
       setTicker('')
       setPrecio('')
       setCantidad('')
