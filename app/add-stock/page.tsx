@@ -60,17 +60,37 @@ export default function AddStockPage() {
         return
       }
 
-      // 1. Get or create portfolio
-      let { data: port } = await supabase.from('portfolios').select('*').eq('user_id', user.id).single()
-      if (!port) {
-        const { data: newPort } = await supabase.from('portfolios').insert({ user_id: user.id, balance_usd: 10000 }).select().single()
-        port = newPort
+      const currentUser = user
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('balance')
+        .eq('id', currentUser.id)
+        .single();
+        
+      if (profileError || !profile) {
+        setErrorMsg('No se pudo obtener tu saldo actual.');
+        setLoading(false);
+        return;
       }
 
       const totalCost = priceNum * qtyNum
 
-      if (port.balance_usd < totalCost) {
-        setErrorMsg('Fondos insuficientes en el portafolio para realizar esta compra.')
+      if (profile.balance < totalCost) {
+        setErrorMsg('Fondos insuficientes en el portafolio para realizar esta compra.');
+        setLoading(false);
+        return;
+      }
+
+      // 1. Get or create portfolio
+      let { data: port } = await supabase.from('portfolios').select('*').eq('user_id', currentUser.id).single()
+      if (!port) {
+        const { data: newPort } = await supabase.from('portfolios').insert({ user_id: currentUser.id, balance_usd: 10000 }).select().single()
+        port = newPort
+      }
+
+      if (!port) {
+        setErrorMsg('No se pudo obtener la información de tu cuenta. Por favor, recarga la página.')
         setLoading(false)
         return
       }
@@ -88,11 +108,11 @@ export default function AddStockPage() {
         throw tradeError
       }
 
-      // 3. Update portfolio balance
+      // 3. Update profile balance
       const { error: updateError } = await supabase
-        .from('portfolios')
-        .update({ balance_usd: port.balance_usd - totalCost })
-        .eq('id', port.id)
+        .from('profiles')
+        .update({ balance: profile.balance - totalCost })
+        .eq('id', currentUser.id)
 
       if (updateError) {
         throw updateError
