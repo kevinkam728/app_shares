@@ -61,23 +61,17 @@ export default function AddStockPage() {
       }
 
       // Get or create portfolio
-      let { data: port } = await supabase.from('portfolios').select('*').eq('user_id', user.id).single()
+      let { data: port } = await supabase.from('portfolios').select('id').eq('user_id', user.id).single()
       if (!port) {
-        const { data: newPort } = await supabase.from('portfolios').insert({ user_id: user.id }).select().single()
+        const { data: newPort } = await supabase.from('portfolios').insert({ user_id: user.id }).select('id').single()
         port = newPort
-      }
-
-      if (!port) {
-        setErrorMsg('No se pudo obtener la información de tu cuenta. Por favor, recarga la página.')
-        setLoading(false)
-        return
       }
 
       const totalCost = priceNum * qtyNum
 
       // Insert trade
       const { error: tradeError } = await supabase.from('simulated_trades').insert({
-        portfolio_id: port.id,
+        portfolio_id: port?.id,
         ticker: ticker.toUpperCase(),
         amount_invested: totalCost,
         buy_price: priceNum,
