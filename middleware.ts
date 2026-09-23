@@ -20,9 +20,9 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Permitir acceso público a /, pero proteger rutas privadas
-  if (!user && (request.nextUrl.pathname.startsWith('/history') || request.nextUrl.pathname.startsWith('/chatbot') || request.nextUrl.pathname.startsWith('/news') || request.nextUrl.pathname.startsWith('/calendar'))) {
+  if (!user && (request.nextUrl.pathname.startsWith('/portfolio') || request.nextUrl.pathname.startsWith('/chatbot') || request.nextUrl.pathname.startsWith('/news') || request.nextUrl.pathname.startsWith('/calendar'))) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 }
 
-export const config = { matcher: ['/history/:path*', '/chatbot/:path*', '/news/:path*', '/calendar/:path*'] }
+export const config = { matcher: ['/portfolio/:path*', '/chatbot/:path*', '/news/:path*', '/calendar/:path*'] }

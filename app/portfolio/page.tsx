@@ -1,75 +1,137 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { buyStockAction } from '../actions/portfolio'
+import { useState, useEffect, Fragment } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getStockData } from '../actions/finance'
 
 export default function PortfolioPage() {
-  const [portfolio, setPortfolio] = useState<any>(null)
-  const [trades, setTrades] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const supabase = createClient()
+  const router = useRouter()
+  const [portfolio, setPortfolio] = useState<any[]>([])
+  const [rawPortfolio, setRawPortfolio] = useState<any>({})
+  const [expandedTicker, setExpandedTicker] = useState<string | null>(null)
 
   useEffect(() => {
-    loadPortfolio()
-  }, [])
+    const fetchPortfolio = async () => {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-  const loadPortfolio = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+      const { data: port } = await supabase
+        .from('portfolios')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
 
-    let { data: port } = await supabase.from('portfolios').select('*').eq('user_id', user.id).single()
-    
-    if (!port) {
-      const { data: newPort } = await supabase.from('portfolios').insert({ user_id: user.id, balance_usd: 10000 }).select().single()
-      port = newPort
+      if (!port) return
+
+      const { data: trades, error } = await supabase
+        .from('simulated_trades')
+        .select('*')
+        .eq('portfolio_id', port.id)
+        .order('buy_date', { ascending: false })
+
+      if (trades) {
+        // Agrupar los trades por ticker para mantener la estructura de la UI
+        const raw: Record<string, any[]> = {}
+        trades.forEach(trade => {
+          if (!raw[trade.ticker]) raw[trade.ticker] = []
+          const price = Number(trade.buy_price || 0)
+          const amount = Number(trade.amount_invested || 0)
+          const quantity = price > 0 ? amount / price : 0
+          raw[trade.ticker].push({
+            date: trade.buy_date || trade.created_at,
+            price: price,
+            quantity: quantity
+          })
+        })
+        
+        setRawPortfolio(raw)
+        
+        // Armar el resumen
+        const summary = Object.keys(raw).map(ticker => {
+          const purchases = raw[ticker]
+          const totalQuantity = purchases.reduce((acc, p) => acc + p.quantity, 0)
+          const totalCost = purchases.reduce((acc, p) => acc + (p.price * p.quantity), 0)
+          const avgPrice = totalQuantity > 0 ? totalCost / totalQuantity : 0
+          return { ticker, totalQuantity, totalCost, avgPrice }
+        })
+        
+        setPortfolio(summary)
+      }
     }
-    
-    setPortfolio(port)
-    
-    const { data: tradesData } = await supabase.from('simulated_trades').select('*').eq('portfolio_id', port.id)
-    setTrades(tradesData || [])
-  }
-
-  const handleBuy = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setLoading(true)
-    const formData = new FormData(e.currentTarget)
-    const result = await buyStockAction(formData)
-    setLoading(false)
-    if (result.error) alert(result.error)
-    else loadPortfolio()
-  }
-
-  if (!portfolio) return <div className="p-8 text-white">Cargando...</div>
+    fetchPortfolio()
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
-      <h1 className="text-3xl font-bold mb-8">Mi Portafolio</h1>
+      <button onClick={() => router.push('/')} className="fixed top-6 left-6 z-50 bg-gray-800 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded border border-gray-600">
+        Volver
+      </button>
+
+      <h1 className="text-3xl font-bold mb-6 mt-16">Mi Portafolio Global</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gray-800 p-6 rounded-lg">
-          <p className="text-gray-400">Saldo Disponible</p>
-          <p className="text-3xl font-bold">${portfolio.balance_usd.toFixed(2)}</p>
-        </div>
-      </div>
-
-      <form onSubmit={handleBuy} className="bg-gray-800 p-6 rounded-lg mb-8 flex gap-4">
-        <input name="ticker" placeholder="Ticker" required className="p-2 bg-gray-700 rounded" />
-        <input name="amount" type="number" placeholder="Monto USD" required className="p-2 bg-gray-700 rounded" />
-        <button type="submit" className="p-2 bg-green-600 rounded hover:bg-green-500">Comprar</button>
-      </form>
-
-      <div className="bg-gray-800 p-6 rounded-lg">
-        <h2 className="text-xl font-bold mb-4">Posiciones Abiertas</h2>
-        {trades.map(trade => (
-          <div key={trade.id} className="flex justify-between p-4 border-b border-gray-700">
-            <span>{trade.ticker}</span>
-            <span>Invertido: ${trade.amount_invested}</span>
-          </div>
-        ))}
-      </div>
+      {portfolio.length === 0 ? (
+        <p className="text-gray-400">No hay operaciones registradas en tu portafolio.</p>
+      ) : (
+        <table className="w-full bg-gray-800 rounded-lg overflow-hidden mb-8">
+          <thead>
+            <tr className="bg-gray-700">
+              <th className="p-4 text-left">Ticker</th>
+              <th className="p-4 text-left">Acciones Totales</th>
+              <th className="p-4 text-left">Precio Promedio (DCA)</th>
+              <th className="p-4 text-left">Capital Invertido</th>
+              <th className="p-4 text-left">Detalles</th>
+            </tr>
+          </thead>
+          <tbody>
+            {portfolio.map((p) => (
+              <Fragment key={p.ticker}>
+                <tr 
+                  className="border-t border-gray-700 cursor-pointer hover:bg-gray-700"
+                  onClick={() => setExpandedTicker(expandedTicker === p.ticker ? null : p.ticker)}
+                >
+                  <td className="p-4 font-bold">{p.ticker}</td>
+                  <td className="p-4">{p.totalQuantity.toFixed(4)}</td>
+                  <td className="p-4">${p.avgPrice.toFixed(2)}</td>
+                  <td className="p-4">${p.totalCost.toFixed(2)}</td>
+                  <td className="p-4 text-sm text-blue-400">
+                      {expandedTicker === p.ticker ? '▲ Ocultar' : '▼ Detalles'}
+                  </td>
+                </tr>
+                {expandedTicker === p.ticker && (
+                  <tr>
+                    <td colSpan={5} className="p-4 bg-gray-900">
+                      <div className="space-y-2 bg-gray-800 p-4 rounded-lg">
+                          <h3 className="font-bold text-gray-400">Transacciones:</h3>
+                          <table className="w-full text-sm">
+                              <thead>
+                                  <tr className="text-gray-500 text-left">
+                                      <th>Fecha de Compra</th>
+                                      <th className="text-right">Precio Unitario</th>
+                                      <th className="text-right">Cantidad</th>
+                                      <th className="text-right">Subtotal</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  {rawPortfolio[p.ticker].map((trade: any, i: number) => (
+                                      <tr key={`${trade.date}-${i}`} className="border-t border-gray-700">
+                                          <td>{new Date(trade.date).toLocaleDateString()}</td>
+                                          <td className="text-right">${trade.price.toFixed(2)}</td>
+                                          <td className="text-right">{trade.quantity.toFixed(4)}</td>
+                                          <td className="text-right">${(trade.quantity * trade.price).toFixed(2)}</td>
+                                      </tr>
+                                  ))}
+                              </tbody>
+                          </table>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
