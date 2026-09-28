@@ -49,26 +49,34 @@ export default function SocialFeed() {
     fetchPosts()
   }, [])
 
-  async function handleCreatePost() {
+  const handleCreatePost = async () => {
     if (!newPostContent.trim()) return
     if (!currentUser) {
       alert("Debes iniciar sesión para publicar.")
       return
     }
 
-    setLoading(true)
-    const { error } = await supabase.from('posts').insert({
-      user_id: currentUser.id,
-      content: newPostContent
-    })
+    try {
+      setLoading(true)
+      const { error } = await supabase
+        .from('posts')
+        .insert([{ user_id: currentUser.id, content: newPostContent.trim() }])
 
-    if (!error) {
+      if (error) {
+        console.error("Error detallado de Supabase:", error)
+        alert("Error al publicar: " + error.message)
+        return
+      }
+
+      // Éxito: limpiar input y recargar posts
       setNewPostContent('')
       await fetchPosts()
-    } else {
-      alert("Error al publicar: " + error.message)
+    } catch (err: any) {
+      console.error("Error inesperado:", err)
+      alert("Ocurrió un error inesperado al publicar.")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function handleLike(postId: string, isLiked: boolean) {
