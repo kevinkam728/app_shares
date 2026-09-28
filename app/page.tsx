@@ -12,6 +12,7 @@ import StockHeatmap from '@/components/StockHeatmap'
 import InvestmentCalculator from '@/components/InvestmentCalculator'
 import TradingViewWidget from '@/components/TradingViewWidget'
 import StockStats from '@/components/StockStats'
+import SocialFeed from '@/components/SocialFeed'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -237,6 +238,11 @@ export default function DashboardPage() {
           <StockStats stats={stock} />
         </div>
       )}
+
+      <div className="mt-12">
+        <h2 className="text-2xl font-bold mb-6 text-center">Comunidad CLINCASH</h2>
+        <SocialFeed />
+      </div>
 
       <InvestmentCalculator isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} />
     </div>
