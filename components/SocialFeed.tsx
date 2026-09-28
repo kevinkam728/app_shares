@@ -11,9 +11,17 @@ export default function SocialFeed() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 
-  async function fetchPosts() {
-    const { data: { user } } = await supabase.auth.getUser()
-    setCurrentUser(user)
+  useEffect(() => {
+    async function initUserAndPosts() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUser(user)
+      await fetchPosts(user)
+    }
+    initUserAndPosts()
+  }, [])
+
+  async function fetchPosts(userParam = currentUser) {
+    const activeUser = userParam !== undefined ? userParam : currentUser
 
     const { data, error } = await supabase
       .from('posts')
@@ -30,8 +38,8 @@ export default function SocialFeed() {
         const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles
         const likes = p.post_likes || []
         const saves = p.post_saves || []
-        const isLiked = user ? likes.some((l: any) => l.user_id === user.id) : false
-        const isSaved = user ? saves.some((s: any) => s.user_id === user.id) : false
+        const isLiked = activeUser ? likes.some((l: any) => l.user_id === activeUser.id) : false
+        const isSaved = activeUser ? saves.some((s: any) => s.user_id === activeUser.id) : false
 
         return {
           ...p,
@@ -45,14 +53,13 @@ export default function SocialFeed() {
     }
   }
 
-  useEffect(() => {
-    fetchPosts()
-  }, [])
-
   const handleCreatePost = async () => {
-    if (!newPostContent.trim()) return
+    if (!newPostContent.trim()) {
+      alert("El mensaje está vacío.")
+      return
+    }
     if (!currentUser) {
-      alert("Debes iniciar sesión para publicar.")
+      alert("Error de sesión: El componente no detecta al usuario logueado. Por favor recarga la página.")
       return
     }
 
@@ -70,7 +77,7 @@ export default function SocialFeed() {
 
       // Éxito: limpiar input y recargar posts
       setNewPostContent('')
-      await fetchPosts()
+      await fetchPosts(currentUser)
     } catch (err: any) {
       console.error("Error inesperado:", err)
       alert("Ocurrió un error inesperado al publicar.")
@@ -97,7 +104,7 @@ export default function SocialFeed() {
         .insert({ post_id: postId, user_id: currentUser.id })
     }
 
-    fetchPosts()
+    fetchPosts(currentUser)
   }
 
   async function handleSave(postId: string, isSaved: boolean) {
@@ -118,7 +125,7 @@ export default function SocialFeed() {
         .insert({ post_id: postId, user_id: currentUser.id })
     }
 
-    fetchPosts()
+    fetchPosts(currentUser)
   }
 
   return (
@@ -136,7 +143,7 @@ export default function SocialFeed() {
           <button
             onClick={handleCreatePost}
             disabled={loading}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 text-white rounded-lg font-bold flex items-center gap-2 transition-colors"
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 text-white rounded-lg font-bold flex items-center gap-2 transition-colors cursor-pointer"
           >
             <Send size={16} />
             {loading ? 'Publicando...' : 'Publicar'}
