@@ -20,21 +20,23 @@ export default function SocialFeed() {
     initUserAndPosts()
   }, [])
 
-  async function fetchPosts(userParam = currentUser) {
+  const fetchPosts = async (userParam = currentUser) => {
     const activeUser = userParam !== undefined ? userParam : currentUser
 
-    const { data, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        profiles(username, avatar_url),
-        post_likes(user_id),
-        post_saves(user_id)
-      `)
-      .order('created_at', { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*, profiles(username, avatar_url), post_likes(user_id), post_saves(user_id)')
+        .order('created_at', { ascending: false })
 
-    if (data) {
-      const formattedPosts = data.map((p: any) => {
+      if (error) {
+        console.error("Error al descargar posts:", error)
+        return
+      }
+
+      console.log("Posts obtenidos de Supabase:", data)
+
+      const formattedPosts = (data || []).map((p: any) => {
         const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles
         const likes = p.post_likes || []
         const saves = p.post_saves || []
@@ -50,6 +52,8 @@ export default function SocialFeed() {
         }
       })
       setPosts(formattedPosts)
+    } catch (err) {
+      console.error("Error inesperado en fetchPosts:", err)
     }
   }
 
@@ -162,21 +166,23 @@ export default function SocialFeed() {
             <div key={p.id} className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-md">
               {/* Header */}
               <div className="flex items-center gap-3 mb-4">
-                {p.profile?.avatar_url ? (
+                {p.profile?.avatar_url || p.profiles?.avatar_url ? (
                   <img
-                    src={p.profile.avatar_url}
-                    alt={p.profile.username || 'Avatar'}
+                    src={p.profile?.avatar_url || p.profiles?.avatar_url}
+                    alt={p.profile?.username || p.profiles?.username || 'Avatar'}
                     className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
                   <div className="w-10 h-10 bg-slate-700 text-slate-200 rounded-full flex items-center justify-center font-bold">
-                    {p.profile?.username?.[0]?.toUpperCase() || 'U'}
+                    {(p.profile?.username || p.profiles?.username || 'U')?.[0]?.toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <h4 className="font-bold text-white">{p.profile?.username || 'Inversor Anónimo'}</h4>
+                  <h4 className="font-bold text-white">
+                    {p.profile?.username || p.profiles?.username || 'Usuario'}
+                  </h4>
                   <p className="text-xs text-slate-400">
-                    {new Date(p.created_at).toLocaleString()}
+                    {p.created_at ? new Date(p.created_at).toLocaleString() : ''}
                   </p>
                 </div>
               </div>
@@ -209,7 +215,7 @@ export default function SocialFeed() {
                   }`}
                 >
                   <Heart size={18} className={p.isLiked ? 'fill-red-500' : ''} />
-                  <span className="text-xs">{p.likesCount}</span>
+                  <span className="text-xs">{p.likesCount || 0}</span>
                 </button>
 
                 <button
