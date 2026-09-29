@@ -26,7 +26,7 @@ export default function SocialFeed() {
     try {
       const { data, error } = await supabase
         .from('posts')
-        .select('*, profiles(username, avatar_url), post_likes(user_id), post_saves(user_id)')
+        .select('*, profiles:profiles!posts_user_id_fkey(username, avatar_url), post_likes(user_id), post_saves(user_id)')
         .order('created_at', { ascending: false })
 
       if (error) {
