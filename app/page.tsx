@@ -130,7 +130,7 @@ export default function DashboardPage() {
                     { icon: Calculator, label: 'Calculadora Financiera', action: () => { setIsCalculatorOpen(true); setIsMenuOpen(false); } },
                     { icon: UserCheck, label: 'Ver Mi Portafolio', action: () => { router.push('/portfolio'); setIsMenuOpen(false); } },
                     { icon: PlusCircle, label: 'Añadir al Portafolio', action: () => { router.push('/add-stock'); setIsMenuOpen(false); } },
-                    { icon: Settings, label: 'Mi Perfil', action: () => { router.push('/profile'); setIsMenuOpen(false); } },
+                    { icon: Settings, label: 'Mi Perfil / Ajustes', action: () => { router.push('/settings'); setIsMenuOpen(false); } },
                     { icon: Users, label: 'Descubrir Inversores', action: () => { router.push('/network'); setIsMenuOpen(false); } },
                    ].map((item, i) => {
                      const IconComponent = item.icon;

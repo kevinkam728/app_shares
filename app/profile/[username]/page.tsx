@@ -49,7 +49,7 @@ export default function PublicInvestorProfilePage() {
   }, [identifier])
 
   const username = profile?.username || decodeURIComponent(identifier)
-  const bio = profile?.bio || 'Inversor centrado en tech, diversificación global y crypto. Buscando valor a largo plazo.'
+  const bio = profile?.bio || 'Sin biografía.'
 
   const mockPosts = [
     {
