@@ -16,8 +16,16 @@ export default function PublicInvestorProfilePage() {
   const [activeTab, setActiveTab] = useState('publicaciones')
   const [loading, setLoading] = useState(true)
 
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false)
+  const [messageContent, setMessageContent] = useState('')
+  const [isSendingMessage, setIsSendingMessage] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+
   useEffect(() => {
     const fetchProfileData = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUser(user)
+
       let { data: profileData } = await supabase
         .from('profiles')
         .select('*')
@@ -47,6 +55,30 @@ export default function PublicInvestorProfilePage() {
     }
     fetchProfileData()
   }, [identifier])
+
+  const handleSendMessage = async () => {
+    if (!messageContent.trim() || !currentUser || !profile) return
+    setIsSendingMessage(true)
+    
+    try {
+      const { error } = await supabase.from('messages').insert({
+        sender_id: currentUser.id,
+        receiver_id: profile.id,
+        content: messageContent.trim()
+      })
+
+      if (error) throw error
+
+      alert("Mensaje enviado correctamente")
+      setIsMessageModalOpen(false)
+      setMessageContent('')
+    } catch (err: any) {
+      console.error("Error al enviar mensaje:", err)
+      alert("Hubo un error al enviar el mensaje.")
+    } finally {
+      setIsSendingMessage(false)
+    }
+  }
 
   const username = profile?.username || decodeURIComponent(identifier)
   const bio = profile?.bio || 'Sin biografía.'
@@ -162,7 +194,13 @@ export default function PublicInvestorProfilePage() {
           <button onClick={() => alert("Próximamente")} className="flex-1 py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg border border-slate-700 transition-colors text-center cursor-pointer">
             Seguir
           </button>
-          <button onClick={() => router.push('/messages')} className="flex-1 py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg border border-slate-700 transition-colors text-center cursor-pointer">
+          <button onClick={() => {
+            if (!currentUser) {
+              alert("Debes iniciar sesión para enviar mensajes.")
+              return
+            }
+            setIsMessageModalOpen(true)
+          }} className="flex-1 py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg border border-slate-700 transition-colors text-center cursor-pointer">
             Mensaje
           </button>
           <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Enlace copiado al portapapeles"); }} className="flex-1 py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg border border-slate-700 transition-colors text-center cursor-pointer">
@@ -241,6 +279,37 @@ export default function PublicInvestorProfilePage() {
         </div>
 
       </div>
+
+      {/* Modal de Mensaje */}
+      {isMessageModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="bg-slate-900 border border-slate-700 p-6 rounded-2xl w-full max-w-md space-y-4 shadow-2xl">
+            <h3 className="text-xl font-bold">Enviar mensaje a {username}</h3>
+            <textarea 
+              rows={4}
+              className="w-full p-3 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:border-blue-500 resize-none"
+              placeholder="Escribe tu mensaje..."
+              value={messageContent}
+              onChange={(e) => setMessageContent(e.target.value)}
+            />
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setIsMessageModalOpen(false)}
+                className="px-4 py-2 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleSendMessage}
+                disabled={isSendingMessage || !messageContent.trim()}
+                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-500 disabled:bg-slate-700 rounded-lg transition-colors font-bold cursor-pointer"
+              >
+                {isSendingMessage ? 'Enviando...' : 'Enviar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
