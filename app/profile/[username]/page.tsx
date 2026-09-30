@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, User, Image as ImageIcon, Heart, MessageCircle, Repeat, Lock } from 'lucide-react'
+import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 
 export default function PublicInvestorProfilePage() {
   const router = useRouter()
@@ -144,6 +145,24 @@ export default function PublicInvestorProfilePage() {
   const username = profile?.username || decodeURIComponent(identifier)
   const bio = profile?.bio || 'Sin biografía.'
 
+  const { chartData, totalInvested } = useMemo(() => {
+    if (!trades || trades.length === 0) return { chartData: [], totalInvested: 0 };
+    
+    // Ordenar trades por fecha (más antiguo primero)
+    const sortedTrades = [...trades].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    
+    let cumulative = 0;
+    const data = sortedTrades.map(trade => {
+      cumulative += (Number(trade.price) * Number(trade.quantity));
+      return {
+        date: new Date(trade.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+        valor: cumulative
+      };
+    });
+
+    return { chartData: data, totalInvested: cumulative };
+  }, [trades]);
+
   return (
     <div className="min-h-screen bg-[#0f172a] text-white p-6 relative">
       {/* Botón Volver */}
@@ -184,33 +203,35 @@ export default function PublicInvestorProfilePage() {
 
           <div>
             <div className="text-3xl font-extrabold text-emerald-400 flex items-center gap-1">
-              +73% <span className="text-xl">↑</span>
+              ${totalInvested > 0 ? totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
             </div>
-            <p className="text-xs text-slate-400">Últimos 12 Meses</p>
+            <p className="text-xs text-slate-400">Capital Total Invertido</p>
           </div>
 
           {/* Gráfico interactivo placeholder */}
           <div className="h-36 bg-slate-900/80 rounded-lg border border-slate-700 relative overflow-hidden flex flex-col justify-end p-3">
-            <div className="absolute inset-0 grid grid-cols-6 grid-rows-4 pointer-events-none opacity-20">
-              {Array.from({ length: 24 }).map((_, i) => (
-                <div key={i} className="border-b border-r border-slate-600"></div>
-              ))}
-            </div>
-            
-            <svg className="absolute inset-0 w-full h-full p-2" preserveAspectRatio="none" viewBox="0 0 100 50">
-              <defs>
-                <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-              <path d="M0,45 L10,38 L25,42 L40,30 L55,35 L70,22 L85,28 L100,10 L100,50 L0,50 Z" fill="url(#greenGrad)" />
-              <path d="M0,45 L10,38 L25,42 L40,30 L55,35 L70,22 L85,28 L100,10" fill="none" stroke="#10b981" strokeWidth="2" />
-            </svg>
-
-            <div className="flex justify-between text-[10px] text-slate-400 z-10 pt-2 border-t border-slate-700/50">
-              <span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span><span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dic</span>
-            </div>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" stroke="#64748b" fontSize={10} tickLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.5rem', color: '#fff', fontSize: '12px' }}
+                    formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Capital Invertido']}
+                  />
+                  <Area type="monotone" dataKey="valor" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#greenGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-xs text-slate-500">
+                No hay historial de inversiones aún.
+              </div>
+            )}
           </div>
 
           <div className="flex justify-between items-center text-xs text-slate-400 pt-1">
