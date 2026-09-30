@@ -16,10 +16,64 @@ export default function PublicInvestorProfilePage() {
   const [activeTab, setActiveTab] = useState('publicaciones')
   const [loading, setLoading] = useState(true)
 
+  const [feedPosts, setFeedPosts] = useState<any[]>([])
+  const [isFetchingFeed, setIsFetchingFeed] = useState(false)
+  const [tabCounts, setTabCounts] = useState({ publicaciones: 0, reposteos: 0, megusta: 0, guardados: 0 })
+
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false)
   const [messageContent, setMessageContent] = useState('')
   const [isSendingMessage, setIsSendingMessage] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    
+    const fetchFeed = async () => {
+      setIsFetchingFeed(true);
+      try {
+        let queryData: any[] = [];
+        
+        if (activeTab === 'publicaciones') {
+          const { data } = await supabase
+            .from('posts')
+            .select('*, profiles:profiles!posts_user_id_fkey(username, avatar_url), post_likes(user_id), post_saves(user_id)')
+            .eq('user_id', profile.id)
+            .order('created_at', { ascending: false });
+          queryData = data || [];
+        } 
+        else if (activeTab === 'megusta') {
+          const { data } = await supabase
+            .from('post_likes')
+            .select('post_id, posts(*, profiles:profiles!posts_user_id_fkey(username, avatar_url), post_likes(user_id), post_saves(user_id))')
+            .eq('user_id', profile.id);
+          queryData = (data || []).map((item: any) => item.posts).filter(Boolean);
+        }
+        else if (activeTab === 'guardados') {
+          const { data } = await supabase
+            .from('post_saves')
+            .select('post_id, posts(*, profiles:profiles!posts_user_id_fkey(username, avatar_url), post_likes(user_id), post_saves(user_id))')
+            .eq('user_id', profile.id);
+          queryData = (data || []).map((item: any) => item.posts).filter(Boolean);
+        }
+        
+        // Formatear datos para la UI (igual que en SocialFeed)
+        const formatted = queryData.map((p: any) => ({
+          ...p,
+          profile: Array.isArray(p.profiles) ? p.profiles[0] : p.profiles,
+          likesCount: p.post_likes?.length || 0,
+          savesCount: p.post_saves?.length || 0,
+        }));
+        
+        setFeedPosts(formatted);
+      } catch (err) {
+        console.error("Error fetching feed:", err);
+      } finally {
+        setIsFetchingFeed(false);
+      }
+    };
+    
+    fetchFeed();
+  }, [activeTab, profile?.id]);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -82,27 +136,6 @@ export default function PublicInvestorProfilePage() {
 
   const username = profile?.username || decodeURIComponent(identifier)
   const bio = profile?.bio || 'Sin biografía.'
-
-  const mockPosts = [
-    {
-      id: 1,
-      author: username,
-      content: "Mi portafolio tech subió un 5% hoy, gracias a $AAPL.",
-      time: "Hace 2 horas",
-      likes: 12,
-      comments: 4,
-      reposts: 2
-    },
-    {
-      id: 2,
-      author: username,
-      content: "Compartiendo mi análisis sobre $BTC.",
-      time: "Hace 5 horas",
-      likes: 24,
-      comments: 8,
-      reposts: 5
-    }
-  ]
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-white p-6 relative">
@@ -211,10 +244,10 @@ export default function PublicInvestorProfilePage() {
         {/* Pestañas (Tabs) */}
         <div className="flex border-b border-slate-700 text-sm overflow-x-auto">
           {[
-            { id: 'publicaciones', label: 'Publicaciones', count: 1 },
-            { id: 'reposteos', label: 'Reposteos', count: 1 },
-            { id: 'megusta', label: 'Me Gusta', count: 3 },
-            { id: 'guardados', label: 'Guardados', count: 3 },
+            { id: 'publicaciones', label: 'Publicaciones', count: 0 },
+            { id: 'reposteos', label: 'Reposteos', count: 0 },
+            { id: 'megusta', label: 'Me Gusta', count: 0 },
+            { id: 'guardados', label: 'Guardados', count: 0 },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -227,7 +260,7 @@ export default function PublicInvestorProfilePage() {
               <span className={`text-xs px-1.5 py-0.5 rounded-full ${
                 activeTab === tab.id ? 'bg-blue-500/20 text-blue-300' : 'bg-slate-800 text-slate-400'
               }`}>
-                {tab.count}
+                {tab.count || 0}
               </span>
             </button>
           ))}
@@ -235,47 +268,54 @@ export default function PublicInvestorProfilePage() {
 
         {/* Feed del Usuario (Posts) */}
         <div className="space-y-4 pt-2">
-          {mockPosts.map((post) => (
-            <div key={post.id} className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md space-y-4">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-slate-700 text-slate-200 rounded-full flex items-center justify-center font-bold">
-                    {post.author[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white capitalize">{post.author}</h4>
-                    <p className="text-xs text-slate-400">{post.time}</p>
-                  </div>
-                </div>
-                <span className="text-slate-500 hover:text-white cursor-pointer font-bold">•••</span>
-              </div>
-
-              {/* Body */}
-              <p className="text-slate-200 text-sm leading-relaxed">{post.content}</p>
-
-              {/* Placeholder image box as seen in sketch */}
-              <div className="w-full h-32 bg-slate-900 rounded-lg border border-slate-700 flex items-center justify-center text-slate-500">
-                <ImageIcon size={32} />
-              </div>
-
-              {/* Footer / Action buttons */}
-              <div className="flex items-center justify-between text-slate-400 border-t border-slate-700 pt-3 px-1">
-                <button onClick={() => alert("Próximamente")} className="flex items-center gap-1.5 hover:text-red-400 transition-colors cursor-pointer">
-                  <Heart size={16} />
-                  <span className="text-xs">{post.likes}</span>
-                </button>
-                <button onClick={() => alert("Próximamente")} className="flex items-center gap-1.5 hover:text-blue-400 transition-colors cursor-pointer">
-                  <MessageCircle size={16} />
-                  <span className="text-xs">{post.comments}</span>
-                </button>
-                <button onClick={() => alert("Próximamente")} className="flex items-center gap-1.5 hover:text-green-400 transition-colors cursor-pointer">
-                  <Repeat size={16} />
-                  <span className="text-xs">{post.reposts}</span>
-                </button>
-              </div>
+          {isFetchingFeed ? (
+            <div className="text-center py-8 text-slate-400">Cargando publicaciones...</div>
+          ) : feedPosts.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 bg-slate-800/50 rounded-xl border border-slate-700/50">
+              No hay publicaciones en esta sección.
             </div>
-          ))}
+          ) : (
+            feedPosts.map((post: any) => (
+              <div key={post.id} className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {post.profile?.avatar_url ? (
+                      <img src={post.profile.avatar_url} alt={post.profile?.username || username} className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 bg-slate-700 text-slate-200 rounded-full flex items-center justify-center font-bold">
+                        {(post.profile?.username || username || 'U')?.[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-bold text-white capitalize">{post.profile?.username || username}</h4>
+                      <p className="text-xs text-slate-400">{post.created_at ? new Date(post.created_at).toLocaleDateString() : ''}</p>
+                    </div>
+                  </div>
+                  <span className="text-slate-500 hover:text-white cursor-pointer font-bold">•••</span>
+                </div>
+
+                {/* Body */}
+                <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
+
+                {/* Footer / Action buttons */}
+                <div className="flex items-center justify-between text-slate-400 border-t border-slate-700 pt-3 px-1">
+                  <button onClick={() => alert("Próximamente")} className="flex items-center gap-1.5 hover:text-red-400 transition-colors cursor-pointer">
+                    <Heart size={16} />
+                    <span className="text-xs">{post.likesCount || 0}</span>
+                  </button>
+                  <button onClick={() => alert("Próximamente")} className="flex items-center gap-1.5 hover:text-blue-400 transition-colors cursor-pointer">
+                    <MessageCircle size={16} />
+                    <span className="text-xs">0</span>
+                  </button>
+                  <button onClick={() => alert("Próximamente")} className="flex items-center gap-1.5 hover:text-green-400 transition-colors cursor-pointer">
+                    <Repeat size={16} />
+                    <span className="text-xs">0</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
       </div>
