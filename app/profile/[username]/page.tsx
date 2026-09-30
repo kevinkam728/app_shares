@@ -80,17 +80,24 @@ export default function PublicInvestorProfilePage() {
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUser(user)
 
+      // Decodificar el parámetro de la URL para quitar %20 y otros caracteres
+      const cleanIdentifier = decodeURIComponent(identifier);
+
+      // 1. Intentar buscar por username exacto
       let { data: profileData } = await supabase
         .from('profiles')
         .select('*')
-        .eq('username', identifier)
+        .eq('username', cleanIdentifier)
         .single()
 
-      if (!profileData) {
+      // 2. Si no lo encuentra por username, intentar por ID
+      // Solo hacer esta consulta si cleanIdentifier parece un UUID válido (formato 36 caracteres con guiones)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!profileData && uuidRegex.test(cleanIdentifier)) {
         const { data: profileById } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', identifier)
+          .eq('id', cleanIdentifier)
           .single()
         profileData = profileById
       }
