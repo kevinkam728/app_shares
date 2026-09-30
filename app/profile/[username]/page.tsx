@@ -105,13 +105,13 @@ export default function PublicInvestorProfilePage() {
 
       if (profileData) {
         setProfile(profileData)
-        if (profileData.is_portfolio_public) {
-          const { data: tradeData } = await supabase
-            .from('simulated_trades')
-            .select('*')
-            .eq('user_id', profileData.id)
-          if (tradeData) setTrades(tradeData)
-        }
+        // Cargar siempre los trades para esta fase de prototipo
+        const { data: tradeData } = await supabase
+          .from('simulated_trades')
+          .select('*')
+          .eq('user_id', profileData.id)
+          .order('created_at', { ascending: false })
+        if (tradeData) setTrades(tradeData)
       }
       setLoading(false)
     }
@@ -202,8 +202,11 @@ export default function PublicInvestorProfilePage() {
           </div>
 
           <div>
-            <div className="text-3xl font-extrabold text-emerald-400 flex items-center gap-1">
-              ${totalInvested > 0 ? totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+            <div className="flex items-baseline gap-3">
+              <div className="text-3xl font-extrabold text-emerald-400">
+                ${totalInvested > 0 ? totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+              </div>
+              <span className="text-sm font-semibold text-slate-400">0.00%</span>
             </div>
             <p className="text-xs text-slate-400">Capital Total Invertido</p>
           </div>
@@ -230,6 +233,34 @@ export default function PublicInvestorProfilePage() {
             ) : (
               <div className="flex items-center justify-center h-full text-xs text-slate-500">
                 No hay historial de inversiones aún.
+              </div>
+            )}
+          </div>
+
+          {/* Tenencias / Historial de Activos */}
+          <div className="space-y-3 pt-3 border-t border-slate-700/60">
+            <h4 className="font-semibold text-sm text-slate-300">Tenencias Públicas</h4>
+            {trades.length === 0 ? (
+              <p className="text-xs text-slate-500">No hay tenencias registradas.</p>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {trades.map(trade => (
+                  <div key={trade.id} className="bg-slate-900/60 p-3 rounded-lg border border-slate-700/80 flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 font-bold flex items-center justify-center border border-blue-500/30">
+                        {trade.ticker.substring(0, 4)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-white uppercase">{trade.ticker}</p>
+                        <p className="text-[10px] text-slate-400">{new Date(trade.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-white">${Number(trade.price).toFixed(2)}</p>
+                      <p className="text-[10px] text-slate-400">{trade.quantity} acciones</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
