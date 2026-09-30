@@ -264,11 +264,6 @@ export default function PublicInvestorProfilePage() {
               }`}
             >
               {tab.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                activeTab === tab.id ? 'bg-blue-500/20 text-blue-300' : 'bg-slate-800 text-slate-400'
-              }`}>
-                {tab.count || 0}
-              </span>
             </button>
           ))}
         </div>
