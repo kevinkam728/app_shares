@@ -105,13 +105,23 @@ export default function PublicInvestorProfilePage() {
 
       if (profileData) {
         setProfile(profileData)
-        // Cargar siempre los trades para esta fase de prototipo
-        const { data: tradeData } = await supabase
-          .from('simulated_trades')
-          .select('*')
+        
+        // 1. Obtener el portfolio_id del usuario
+        const { data: port } = await supabase
+          .from('portfolios')
+          .select('id')
           .eq('user_id', profileData.id)
-          .order('created_at', { ascending: false })
-        if (tradeData) setTrades(tradeData)
+          .single()
+
+        // 2. Obtener los trades usando el portfolio_id
+        if (port) {
+          const { data: tradeData } = await supabase
+            .from('simulated_trades')
+            .select('*')
+            .eq('portfolio_id', port.id)
+            .order('buy_date', { ascending: false })
+          if (tradeData) setTrades(tradeData)
+        }
       }
       setLoading(false)
     }
@@ -147,15 +157,14 @@ export default function PublicInvestorProfilePage() {
 
   const { chartData, totalInvested } = useMemo(() => {
     if (!trades || trades.length === 0) return { chartData: [], totalInvested: 0 };
-    
-    // Ordenar trades por fecha (más antiguo primero)
-    const sortedTrades = [...trades].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    
+
+    const sortedTrades = [...trades].sort((a, b) => new Date(a.buy_date || a.created_at).getTime() - new Date(b.buy_date || b.created_at).getTime());
+
     let cumulative = 0;
     const data = sortedTrades.map(trade => {
-      cumulative += (Number(trade.price) * Number(trade.quantity));
+      cumulative += Number(trade.amount_invested || 0);
       return {
-        date: new Date(trade.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+        date: new Date(trade.buy_date || trade.created_at).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
         valor: cumulative
       };
     });
@@ -244,23 +253,29 @@ export default function PublicInvestorProfilePage() {
               <p className="text-xs text-slate-500">No hay tenencias registradas.</p>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {trades.map(trade => (
-                  <div key={trade.id} className="bg-slate-900/60 p-3 rounded-lg border border-slate-700/80 flex justify-between items-center text-xs">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 font-bold flex items-center justify-center border border-blue-500/30">
-                        {trade.ticker.substring(0, 4)}
+                {trades.map(trade => {
+                  const price = Number(trade.buy_price || 0);
+                  const amount = Number(trade.amount_invested || 0);
+                  const quantity = price > 0 ? (amount / price).toFixed(4) : 0;
+
+                  return (
+                    <div key={trade.id} className="bg-slate-900/60 p-3 rounded-lg border border-slate-700/80 flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-blue-600/20 text-blue-400 font-bold flex items-center justify-center border border-blue-500/30">
+                          {trade.ticker?.substring(0, 4) || 'UNK'}
+                        </div>
+                        <div>
+                          <p className="font-bold text-white uppercase">{trade.ticker}</p>
+                          <p className="text-[10px] text-slate-400">{new Date(trade.buy_date || trade.created_at).toLocaleDateString()}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-white uppercase">{trade.ticker}</p>
-                        <p className="text-[10px] text-slate-400">{new Date(trade.created_at).toLocaleDateString()}</p>
+                      <div className="text-right">
+                        <p className="font-semibold text-white">${price.toFixed(2)}</p>
+                        <p className="text-[10px] text-slate-400">{quantity} acciones</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-white">${Number(trade.price).toFixed(2)}</p>
-                      <p className="text-[10px] text-slate-400">{trade.quantity} acciones</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
