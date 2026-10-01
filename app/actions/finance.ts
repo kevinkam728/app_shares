@@ -53,3 +53,22 @@ export async function searchStocks(query: string) {
     return [];
   }
 }
+
+export async function getRealTimePrice(ticker: string) {
+  if (!ticker) return null;
+  try {
+    // Consultar la API pública de Yahoo Finance
+    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker.toUpperCase()}`, {
+      next: { revalidate: 0 } // No cachear, queremos el precio en vivo
+    });
+    const data = await response.json();
+    
+    if (data.chart.error) return null;
+    
+    const price = data.chart.result[0].meta.regularMarketPrice;
+    return price;
+  } catch (error) {
+    console.error("Error fetching price for", ticker, error);
+    return null;
+  }
+}

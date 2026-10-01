@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { searchStocks } from '@/app/actions/finance'
+import { searchStocks, getRealTimePrice } from '@/app/actions/finance'
 import { PlusCircle, ArrowLeft } from 'lucide-react'
 
 export default function AddStockPage() {
@@ -19,6 +19,25 @@ export default function AddStockPage() {
   const [loading, setLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false)
+  const [marketPrice, setMarketPrice] = useState<any>(null)
+
+  const handleTickerBlur = async () => {
+    if (!ticker.trim()) return;
+    setIsFetchingPrice(true);
+    setMarketPrice(null);
+
+    const price = await getRealTimePrice(ticker);
+    if (price) {
+      setMarketPrice(price);
+      // Asignar el precio al estado del formulario que maneja el envío a Supabase
+      setPrecio(price.toString()); 
+    } else {
+      alert("No se encontró el Ticker. Verifica que esté bien escrito (ej: AAPL, MSFT, BTC-USD).");
+    }
+    setIsFetchingPrice(false);
+  };
 
   useEffect(() => {
     if (ticker.length > 1) {
@@ -121,12 +140,23 @@ export default function AddStockPage() {
               className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-500" 
               value={ticker} 
               onChange={e => setTicker(e.target.value.toUpperCase())} 
+              onBlur={handleTickerBlur}
               required
             />
             {showDropdown && suggestions.length > 0 && (
               <ul className="absolute w-full bg-gray-800 border border-gray-700 rounded-md mt-1 max-h-48 overflow-y-auto z-50 shadow-xl">
                 {suggestions.map((s, index) => (
-                  <li key={`${s.symbol}-${index}`} onClick={() => { setTicker(s.symbol); setShowDropdown(false); }} className="px-4 py-2 hover:bg-gray-700 cursor-pointer">
+                  <li key={`${s.symbol}-${index}`} onClick={async () => { 
+                    setTicker(s.symbol); 
+                    setShowDropdown(false); 
+                    setIsFetchingPrice(true);
+                    const price = await getRealTimePrice(s.symbol);
+                    if (price) {
+                      setMarketPrice(price);
+                      setPrecio(price.toString());
+                    }
+                    setIsFetchingPrice(false);
+                  }} className="px-4 py-2 hover:bg-gray-700 cursor-pointer">
                     <span className="font-bold">{s.symbol}</span> - <span className="text-gray-400 text-sm">{s.name}</span>
                   </li>
                 ))}
@@ -151,11 +181,14 @@ export default function AddStockPage() {
               type="number" 
               step="any"
               placeholder="150.00" 
-              className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-500" 
+              className="w-full p-3 bg-slate-700 text-slate-400 cursor-not-allowed rounded-lg border border-gray-600 focus:outline-none" 
               value={precio} 
-              onChange={e => setPrecio(e.target.value)} 
+              readOnly={true}
               required
             />
+            <p className="text-xs text-gray-400 mt-1">
+              {isFetchingPrice ? 'Buscando cotización en vivo...' : 'Precio fijado por el mercado'}
+            </p>
           </div>
 
           <div>
