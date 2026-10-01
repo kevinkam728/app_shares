@@ -9,6 +9,7 @@ export default function SocialFeed() {
   const [posts, setPosts] = useState<any[]>([])
   const [newPostContent, setNewPostContent] = useState('')
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [activeTab, setActiveTab] = useState('general')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -19,6 +20,12 @@ export default function SocialFeed() {
     }
     initUserAndPosts()
   }, [])
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchPosts(currentUser);
+    }
+  }, [activeTab]);
 
   const fetchPosts = async (userParam = currentUser) => {
     const activeUser = userParam !== undefined ? userParam : currentUser
@@ -51,7 +58,19 @@ export default function SocialFeed() {
           isSaved
         }
       })
-      setPosts(formattedPosts)
+
+      let finalPosts = [...formattedPosts];
+
+      if (activeTab === 'tendencias') {
+        // Ordenar por mayor cantidad de likes para Tendencias
+        finalPosts.sort((a, b) => b.likesCount - a.likesCount);
+      } else if (activeTab === 'siguiendo') {
+        // Placeholder: Filtrar hasta que exista la tabla de seguidores
+        // Por ahora lo dejamos vacío o filtramos temporalmente para mostrar cómo funciona
+        finalPosts = []; 
+      }
+
+      setPosts(finalPosts);
     } catch (err) {
       console.error("Error inesperado en fetchPosts:", err)
     }
@@ -134,6 +153,39 @@ export default function SocialFeed() {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
+      {/* Barra de Pestañas */}
+      <div className="flex border-b border-slate-700 font-medium text-sm">
+        <button
+          onClick={() => setActiveTab('general')}
+          className={`flex-1 pb-3 text-center transition-colors relative ${activeTab === 'general' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+        >
+          General
+          {activeTab === 'general' && (
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-500 rounded-t-full" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('tendencias')}
+          className={`flex-1 pb-3 text-center transition-colors relative ${activeTab === 'tendencias' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+        >
+          Tendencias
+          {activeTab === 'tendencias' && (
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-500 rounded-t-full" />
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('siguiendo')}
+          className={`flex-1 pb-3 text-center transition-colors relative ${activeTab === 'siguiendo' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+        >
+          Siguiendo
+          {activeTab === 'siguiendo' && (
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-500 rounded-t-full" />
+          )}
+        </button>
+      </div>
+
       {/* Caja de redacción */}
       <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
         <textarea
@@ -159,7 +211,9 @@ export default function SocialFeed() {
       <div className="space-y-4">
         {posts.length === 0 ? (
           <div className="text-center py-12 text-slate-400 bg-slate-800/50 rounded-xl border border-slate-700/50">
-            No hay publicaciones aún. ¡Sé el primero en compartir algo!
+            {activeTab === 'siguiendo'
+              ? 'Aún no sigues a nadie o tus contactos no han publicado nada. ¡Explora perfiles y empieza a seguirlos!'
+              : 'No hay publicaciones aún. ¡Sé el primero en compartir algo!'}
           </div>
         ) : (
           posts.map((p) => (
