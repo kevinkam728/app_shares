@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Heart, MessageCircle, Repeat, Bookmark, Send } from 'lucide-react'
 
-export default function SocialFeed() {
+export default function SocialFeed({ searchQuery = '' }: { searchQuery?: string }) {
   const supabase = createClient()
   const [posts, setPosts] = useState<any[]>([])
   const [newPostContent, setNewPostContent] = useState('')
@@ -243,16 +243,29 @@ export default function SocialFeed() {
 
       {/* Lista de Posts */}
       <div className="space-y-4">
-        {posts.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 bg-slate-800/50 rounded-xl border border-slate-700/50">
-            {activeTab === 'siguiendo'
-              ? 'Aún no sigues a nadie o tus contactos no han publicado nada. ¡Explora perfiles y empieza a seguirlos!'
-              : activeTab === 'operaciones'
-              ? 'Tus contactos aún no han realizado operaciones. ¡Sigue a más inversores para ver su actividad!'
-              : 'No hay publicaciones aún. ¡Sé el primero en compartir algo!'}
-          </div>
-        ) : (
-          posts.map((p) => (
+        {(() => {
+          const displayedPosts = posts.filter(post => {
+            if (!searchQuery || !searchQuery.trim()) return true;
+            
+            const query = searchQuery.toLowerCase().trim();
+            const contentMatch = post.content && post.content.toLowerCase().includes(query);
+            const authorMatch = post.profile?.username && post.profile.username.toLowerCase().includes(query);
+            
+            return contentMatch || authorMatch;
+          });
+
+          return displayedPosts.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 bg-slate-800/50 rounded-xl border border-slate-700/50">
+              {posts.length === 0
+                ? (activeTab === 'siguiendo'
+                  ? 'Aún no sigues a nadie o tus contactos no han publicado nada. ¡Explora perfiles y empieza a seguirlos!'
+                  : activeTab === 'operaciones'
+                  ? 'Tus contactos aún no han realizado operaciones. ¡Sigue a más inversores para ver su actividad!'
+                  : 'No hay publicaciones aún. ¡Sé el primero en compartir algo!')
+                : `No se encontraron resultados para "${searchQuery}".`}
+            </div>
+          ) : (
+            displayedPosts.map((p) => (
             <div key={p.id} className={`bg-slate-800 p-6 rounded-xl border ${p.isTradeAlert ? 'border-emerald-800' : 'border-slate-700'} shadow-md`}>
               {/* Header */}
               <div className="flex items-center gap-3 mb-4">
@@ -322,7 +335,7 @@ export default function SocialFeed() {
               )}
             </div>
           ))
-        )}
+        })()}
       </div>
     </div>
   )

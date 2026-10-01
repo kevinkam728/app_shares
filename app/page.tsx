@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState("Usuario")
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false)
-  const [query, setQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [stock, setStock] = useState<any>(null)
@@ -79,9 +79,9 @@ export default function DashboardPage() {
 
   // Efecto para debounce de búsqueda
   useEffect(() => {
-    if (query.length > 1) {
+    if (searchQuery.length > 1) {
       const timer = setTimeout(async () => {
-        const results = await searchStocks(query)
+        const results = await searchStocks(searchQuery)
         setSuggestions(results)
         setShowDropdown(true)
       }, 300)
@@ -90,7 +90,7 @@ export default function DashboardPage() {
       setSuggestions([])
       setShowDropdown(false)
     }
-  }, [query])
+  }, [searchQuery])
 
   const handleSearch = async (ticker: string) => {
     setQuery(ticker)
@@ -183,13 +183,13 @@ export default function DashboardPage() {
       <div className="relative mb-8" ref={dropdownRef}>
         <div className="flex gap-2">
           <input 
-            value={query} 
-            onChange={(e) => setQuery(e.target.value.toUpperCase())}
-            placeholder="Buscar ticker (ej: AAPL)..."
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar publicaciones, cashtags (ej: $AAPL) o usuarios..."
             className="flex-1 p-3 bg-gray-800 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500"
           />
           <button 
-            onClick={() => handleSearch(query)}
+            onClick={() => handleSearch(searchQuery)}
             disabled={loading}
             className="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 disabled:bg-gray-600 flex items-center gap-2"
           >
@@ -238,7 +238,7 @@ export default function DashboardPage() {
       )}
 
       <div className="mt-8 flex-1 w-full flex flex-col items-center">
-        <SocialFeed />
+        <SocialFeed searchQuery={searchQuery} />
       </div>
 
       <InvestmentCalculator isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} />
