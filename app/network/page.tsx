@@ -33,7 +33,7 @@ export default function NetworkPage() {
 
             // Obtener a quiénes sigue
             const { data: follows } = await supabase
-                .from('followers')
+                .from('follows')
                 .select('following_id')
                 .eq('follower_id', user.id)
             
@@ -50,14 +50,14 @@ export default function NetworkPage() {
 
         if (isFollowing) {
             await supabase
-                .from('followers')
+                .from('follows')
                 .delete()
                 .eq('follower_id', currentUser)
                 .eq('following_id', targetUserId)
             setFollowing(prev => prev.filter(id => id !== targetUserId))
         } else {
             await supabase
-                .from('followers')
+                .from('follows')
                 .insert({ follower_id: currentUser, following_id: targetUserId })
             setFollowing(prev => [...prev, targetUserId])
             
