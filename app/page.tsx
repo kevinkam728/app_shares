@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link';
 import { getStockData, getHistoricalData, searchStocks } from './actions/finance'
 import { createClient } from '@/lib/supabase/client'
-import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell, Users, PlusCircle } from 'lucide-react'
+import { Search, UserCheck, Settings, MessageSquare, Newspaper, Calendar, Calculator, Bell, Users, PlusCircle, LayoutGrid } from 'lucide-react'
 import NotificationBell from '@/components/NotificationBell'
 import MessageIcon from '@/components/MessageIcon'
-import StockHeatmap from '@/components/StockHeatmap'
 import InvestmentCalculator from '@/components/InvestmentCalculator'
 import TradingViewWidget from '@/components/TradingViewWidget'
 import StockStats from '@/components/StockStats'
@@ -127,6 +126,7 @@ export default function DashboardPage() {
                     { icon: MessageSquare, label: 'Chatbot Financiero', action: () => { router.push('/chatbot'); setIsMenuOpen(false); } },
                     { icon: Newspaper, label: 'Noticias del Mercado', action: () => { router.push('/news'); setIsMenuOpen(false); } },
                     { icon: Calendar, label: 'Calendario de Ganancias', action: () => { router.push('/calendar'); setIsMenuOpen(false); } },
+                    { icon: LayoutGrid, label: 'Heatmap', action: () => { router.push('/heatmap'); setIsMenuOpen(false); } },
                     { icon: Calculator, label: 'Calculadora Financiera', action: () => { setIsCalculatorOpen(true); setIsMenuOpen(false); } },
                     { icon: UserCheck, label: 'Ver Mi Portafolio', action: () => { router.push('/portfolio'); setIsMenuOpen(false); } },
                     { icon: PlusCircle, label: 'Añadir al Portafolio', action: () => { router.push('/add-stock'); setIsMenuOpen(false); } },
@@ -212,9 +212,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="mt-8">
-        <StockHeatmap />
-      </div>
+
 
         {stock && (
         <div className="bg-gray-800 p-8 rounded-xl shadow-xl mt-8">
@@ -239,8 +237,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-6 text-center">Comunidad CLINCASH</h2>
+      <div className="mt-8 flex-1 w-full flex flex-col items-center">
         <SocialFeed />
       </div>
 
