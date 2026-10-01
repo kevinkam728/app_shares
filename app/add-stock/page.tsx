@@ -11,7 +11,6 @@ export default function AddStockPage() {
   const supabase = createClient()
   
   const [ticker, setTicker] = useState('')
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [precio, setPrecio] = useState('')
   const [cantidad, setCantidad] = useState('')
   const [suggestions, setSuggestions] = useState<{symbol: string, name: string}[]>([])
@@ -94,7 +93,7 @@ export default function AddStockPage() {
         ticker: ticker.toUpperCase(),
         amount_invested: totalCost,
         buy_price: priceNum,
-        buy_date: new Date(fecha).toISOString()
+        buy_date: new Date().toISOString()
       })
 
       if (tradeError) {
@@ -162,17 +161,6 @@ export default function AddStockPage() {
                 ))}
               </ul>
             )}
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Fecha de Compra</label>
-            <input 
-              type="date" 
-              className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-500" 
-              value={fecha} 
-              onChange={e => setFecha(e.target.value)} 
-              required
-            />
           </div>
 
           <div>
