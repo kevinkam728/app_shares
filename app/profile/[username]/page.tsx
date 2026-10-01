@@ -25,6 +25,7 @@ export default function PublicInvestorProfilePage() {
   const [messageContent, setMessageContent] = useState('')
   const [isSendingMessage, setIsSendingMessage] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [isFollowing, setIsFollowing] = useState(false)
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -106,6 +107,16 @@ export default function PublicInvestorProfilePage() {
       if (profileData) {
         setProfile(profileData)
         
+        if (user) {
+          const { data: followData } = await supabase
+            .from('follows')
+            .select('*')
+            .eq('follower_id', user.id)
+            .eq('following_id', profileData.id)
+            .single();
+          if (followData) setIsFollowing(true);
+        }
+
         // 1. Obtener el portfolio_id del usuario
         const { data: port } = await supabase
           .from('portfolios')
@@ -127,6 +138,17 @@ export default function PublicInvestorProfilePage() {
     }
     fetchProfileData()
   }, [identifier])
+
+  const handleToggleFollow = async () => {
+    if (!currentUser) { alert("Inicia sesión para seguir usuarios."); return; }
+    if (isFollowing) {
+      await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', profile.id);
+      setIsFollowing(false);
+    } else {
+      await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: profile.id });
+      setIsFollowing(true);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!messageContent.trim() || !currentUser || !profile) return
@@ -298,8 +320,8 @@ export default function PublicInvestorProfilePage() {
 
         {/* Botones de Acción */}
         <div className="flex gap-3">
-          <button onClick={() => alert("Próximamente")} className="flex-1 py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg border border-slate-700 transition-colors text-center cursor-pointer">
-            Seguir
+          <button onClick={handleToggleFollow} className="flex-1 py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white font-medium rounded-lg border border-slate-700 transition-colors text-center cursor-pointer">
+            {isFollowing ? 'Siguiendo' : 'Seguir'}
           </button>
           <button onClick={() => {
             if (!currentUser) {

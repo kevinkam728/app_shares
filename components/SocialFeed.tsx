@@ -31,6 +31,33 @@ export default function SocialFeed() {
     const activeUser = userParam !== undefined ? userParam : currentUser
 
     try {
+      let followingIds: string[] = [];
+      if (activeUser) {
+        const { data: follows } = await supabase.from('follows').select('following_id').eq('follower_id', activeUser.id);
+        followingIds = (follows || []).map((f: any) => f.following_id);
+      }
+
+      if (activeTab === 'operaciones') {
+        if (followingIds.length === 0) { setPosts([]); return; }
+
+        // Buscar trades de los usuarios seguidos
+        const { data: trades } = await supabase
+          .from('simulated_trades')
+          .select('*, profiles(username, avatar_url)')
+          .in('user_id', followingIds)
+          .order('created_at', { ascending: false });
+
+        const tradeAlerts = (trades || []).map((t: any) => ({
+          id: `trade-${t.id}`,
+          isTradeAlert: true,
+          profile: Array.isArray(t.profiles) ? t.profiles[0] : t.profiles,
+          content: `Compró $${Number(t.amount_invested || 0).toFixed(2)} USD en acciones de ${t.ticker}`,
+          created_at: t.created_at
+        }));
+        setPosts(tradeAlerts);
+        return; // Terminamos aquí para esta pestaña
+      }
+
       const { data, error } = await supabase
         .from('posts')
         .select('*, profiles:profiles!posts_user_id_fkey(username, avatar_url), post_likes(user_id), post_saves(user_id)')
@@ -62,12 +89,9 @@ export default function SocialFeed() {
       let finalPosts = [...formattedPosts];
 
       if (activeTab === 'tendencias') {
-        // Ordenar por mayor cantidad de likes para Tendencias
         finalPosts.sort((a, b) => b.likesCount - a.likesCount);
       } else if (activeTab === 'siguiendo') {
-        // Placeholder: Filtrar hasta que exista la tabla de seguidores
-        // Por ahora lo dejamos vacío o filtramos temporalmente para mostrar cómo funciona
-        finalPosts = []; 
+        finalPosts = finalPosts.filter(p => followingIds.includes(p.user_id));
       }
 
       setPosts(finalPosts);
@@ -184,6 +208,16 @@ export default function SocialFeed() {
             <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-500 rounded-t-full" />
           )}
         </button>
+
+        <button
+          onClick={() => setActiveTab('operaciones')}
+          className={`flex-1 pb-3 text-center transition-colors relative ${activeTab === 'operaciones' ? 'text-white' : 'text-slate-500 hover:text-slate-300'}`}
+        >
+          Operaciones
+          {activeTab === 'operaciones' && (
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-blue-500 rounded-t-full" />
+          )}
+        </button>
       </div>
 
       {/* Caja de redacción */}
@@ -213,11 +247,13 @@ export default function SocialFeed() {
           <div className="text-center py-12 text-slate-400 bg-slate-800/50 rounded-xl border border-slate-700/50">
             {activeTab === 'siguiendo'
               ? 'Aún no sigues a nadie o tus contactos no han publicado nada. ¡Explora perfiles y empieza a seguirlos!'
+              : activeTab === 'operaciones'
+              ? 'Tus contactos aún no han realizado operaciones. ¡Sigue a más inversores para ver su actividad!'
               : 'No hay publicaciones aún. ¡Sé el primero en compartir algo!'}
           </div>
         ) : (
           posts.map((p) => (
-            <div key={p.id} className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-md">
+            <div key={p.id} className={`bg-slate-800 p-6 rounded-xl border ${p.isTradeAlert ? 'border-emerald-800' : 'border-slate-700'} shadow-md`}>
               {/* Header */}
               <div className="flex items-center gap-3 mb-4">
                 {p.profile?.avatar_url || p.profiles?.avatar_url ? (
@@ -245,43 +281,45 @@ export default function SocialFeed() {
               <p className="text-slate-200 mb-6 whitespace-pre-wrap leading-relaxed">{p.content}</p>
 
               {/* Footer / Action Buttons */}
-              <div className="flex items-center justify-between text-slate-400 border-t border-slate-700 pt-4 px-2">
-                <button
-                  onClick={() => alert("Próximamente")}
-                  className="flex items-center gap-2 hover:text-blue-400 transition-colors"
-                >
-                  <MessageCircle size={18} />
-                  <span className="text-xs">Responder</span>
-                </button>
+              {!p.isTradeAlert && (
+                <div className="flex items-center justify-between text-slate-400 border-t border-slate-700 pt-4 px-2">
+                  <button
+                    onClick={() => alert("Próximamente")}
+                    className="flex items-center gap-2 hover:text-blue-400 transition-colors"
+                  >
+                    <MessageCircle size={18} />
+                    <span className="text-xs">Responder</span>
+                  </button>
 
-                <button
-                  onClick={() => alert("Próximamente")}
-                  className="flex items-center gap-2 hover:text-green-400 transition-colors"
-                >
-                  <Repeat size={18} />
-                  <span className="text-xs">Repostear</span>
-                </button>
+                  <button
+                    onClick={() => alert("Próximamente")}
+                    className="flex items-center gap-2 hover:text-green-400 transition-colors"
+                  >
+                    <Repeat size={18} />
+                    <span className="text-xs">Repostear</span>
+                  </button>
 
-                <button
-                  onClick={() => handleLike(p.id, p.isLiked)}
-                  className={`flex items-center gap-2 transition-colors ${
-                    p.isLiked ? 'text-red-500' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Heart size={18} className={p.isLiked ? 'fill-red-500' : ''} />
-                  <span className="text-xs">{p.likesCount || 0}</span>
-                </button>
+                  <button
+                    onClick={() => handleLike(p.id, p.isLiked)}
+                    className={`flex items-center gap-2 transition-colors ${
+                      p.isLiked ? 'text-red-500' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Heart size={18} className={p.isLiked ? 'fill-red-500' : ''} />
+                    <span className="text-xs">{p.likesCount || 0}</span>
+                  </button>
 
-                <button
-                  onClick={() => handleSave(p.id, p.isSaved)}
-                  className={`flex items-center gap-2 transition-colors ${
-                    p.isSaved ? 'text-blue-500' : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Bookmark size={18} className={p.isSaved ? 'fill-blue-500' : ''} />
-                  <span className="text-xs">Guardar</span>
-                </button>
-              </div>
+                  <button
+                    onClick={() => handleSave(p.id, p.isSaved)}
+                    className={`flex items-center gap-2 transition-colors ${
+                      p.isSaved ? 'text-blue-500' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Bookmark size={18} className={p.isSaved ? 'fill-blue-500' : ''} />
+                    <span className="text-xs">Guardar</span>
+                  </button>
+                </div>
+              )}
             </div>
           ))
         )}
